@@ -1,0 +1,18 @@
+{
+  "title": "Texas Hold'em Poker",
+  "quick_play": "Quick Play",
+  "settings": "Settings",
+  "fold": "Fold",
+  "check": "Check",
+  "call": "Call",
+  "raise": "Raise",
+  "all_in": "All-In",
+  "pot": "Pot",
+  "small_blind": "Small Blind",
+  "big_blind": "Big Blind",
+  "dealer": "Dealer",
+  "you_win": "You Win!",
+  "you_lose": "You Lose",
+  "game_over": "Game Over",
+  "new_game": "New Game"
+}

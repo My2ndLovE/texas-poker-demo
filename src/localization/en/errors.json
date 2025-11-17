@@ -1,0 +1,7 @@
+{
+  "insufficient_chips": "Insufficient chips",
+  "invalid_bet": "Invalid bet amount",
+  "cannot_check": "Cannot check when bet exists",
+  "min_raise_required": "Minimum raise required",
+  "action_timeout": "Action timeout - auto-folding"
+}
