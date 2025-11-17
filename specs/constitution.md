@@ -114,9 +114,28 @@
 - **Icons**: Lucide React or similar professional library
 - **No Emojis**: Use proper icons for suits, actions, buttons
 - **Design System**: Consistent colors, typography, spacing
-- **Responsive**: Works on desktop (1920x1080) to laptop (1366x768)
+- **Responsive**: Mobile-first (320px-428px), scales up to tablet/desktop
 
 **Rationale**: Professional appearance builds trust and quality perception
+
+---
+
+### IX. Mobile-First Design
+**Commitment**: Touch-optimized, mobile-native experience
+
+- **Primary Platform**: Smartphones (iPhone SE to iPhone 14 Pro Max, Android equivalents)
+- **Touch Targets**: Minimum 44x44px (iOS) / 48x48dp (Android)
+- **Thumb Zones**: Primary actions in bottom 25% of screen (easy reach)
+- **Gestures**: Swipe, tap, long-press, pinch-zoom (not just mouse/keyboard)
+- **Orientation**: Portrait AND landscape support with smooth 300ms transitions
+- **Performance**: 60fps animations on iPhone 11 (A13 Bionic) and Pixel 5 (Snapdragon 765G)
+- **PWA**: Installable, works offline, service worker caching
+- **Assets**: <50KB images (WebP format), <500KB initial bundle (gzipped)
+- **Safe Areas**: Handle notch/home indicator (env(safe-area-inset-*))
+- **Haptic Feedback**: Vibration API for tactile feedback (optional, toggleable)
+- **Battery**: Optimize for mobile battery life (efficient animations, reduced CPU usage)
+
+**Rationale**: Majority of users play on mobile devices - desktop is secondary platform
 
 ---
 
@@ -125,23 +144,28 @@
 ### Separation of Concerns
 
 ```
-presentation/        → React components, UI logic
+presentation/        → React components, UI logic (mobile-first)
 ├── components/      → Reusable UI primitives
-├── pages/           → Game screens (menu, table, settings)
-└── hooks/           → Custom React hooks
+│   ├── mobile/      → Mobile-specific components (BottomSheet, GestureArea, SafeArea)
+│   ├── game/        → Game components (PokerTable, ActionButtons)
+│   └── ui/          → Base UI (Button, Slider, Toast)
+├── pages/           → Game screens (HomePage, GamePage)
+├── hooks/           → Custom React hooks (useOrientation, useGesture, useHaptic)
+├── gestures/        → Touch gesture recognizers
+└── styles/          → Mobile-first CSS (safe-area.css, touch.css)
 
-game-logic/          → Pure TypeScript game engine
+game-logic/          → Pure TypeScript game engine (device-agnostic)
 ├── engine/          → Core game loop, state machine
 ├── rules/           → Poker rules validation
-├── evaluation/      → Hand ranking and comparison
+├── evaluation/      → Hand ranking (PokerHandEvaluator integration)
 └── pot/             → Pot calculation and side pots
 
-bot-ai/              → Bot decision-making
+bot-ai/              → Bot decision-making (device-agnostic)
 ├── strategies/      → Easy, Medium, Hard strategies
-├── personality/     → Bot behavior traits
+├── personality/     → Bot behavior traits (persistent across games)
 └── decision/        → Action selection logic
 
-state-management/    → Redux/Zustand stores
+state-management/    → Zustand stores
 ├── game-state/      → Current game state (cards, pot, players)
 ├── player-state/    → Player stats, chips, settings
 └── ui-state/        → UI visibility, animations
@@ -152,15 +176,20 @@ state-management/    → Redux/Zustand stores
 **Required**:
 - TypeScript 5.x (strict mode)
 - React 18+ (functional components, hooks)
-- State management library (Redux Toolkit or Zustand)
-- Testing framework (Jest + React Testing Library)
-- Build tool (Vite for fast development)
+- Zustand 4.x (state management)
+- Testing framework (Jest + React Testing Library + Playwright for E2E)
+- Build tool (Vite 5.x with PWA plugin)
+- **Hand Evaluator**: [PokerHandEvaluator](https://github.com/HenryRLee/PokerHandEvaluator) (C++ with WASM or TypeScript port)
+- **PWA**: vite-plugin-pwa for offline support
+- **Icons**: Lucide React (no emojis)
+- **Mobile Browsers**: iOS Safari 15+, Chrome Android 100+, Samsung Internet 16+
 
 **Prohibited**:
 - No external APIs or backend services
-- No database (SQLite, IndexedDB discouraged - use localStorage only for settings)
+- No database (SQLite, IndexedDB discouraged - use localStorage only for settings/bot personalities)
 - No WebSocket/network communication
 - No server-side code
+- No other hand evaluation libraries (only PokerHandEvaluator)
 
 ---
 
@@ -232,35 +261,45 @@ function calculateSidePots(players) {
 
 ### Technical Metrics
 - **Test Coverage**: ≥80% for game logic, ≥60% for UI
-- **Performance**: 60fps animations, <100ms action response
+- **Performance (Mobile)**: 60fps animations on iPhone 11 and Pixel 5, <100ms action response
 - **Code Quality**: Zero ESLint errors, TypeScript strict mode
-- **Build Size**: <2MB total bundle (code-splitting applied)
+- **Build Size**: <500KB initial bundle (gzipped), <1MB total with assets
+- **Battery Usage**: <15% battery consumption for 30-minute session on mobile
+- **Offline Support**: 100% functionality offline after first load (PWA)
 
 ### Gameplay Metrics
 - **Correctness**: 100% accurate poker rules (verified by test suite)
-- **Bot Quality**: Medium bots win ~45-55% against Easy bots (balanced)
-- **User Engagement**: Average session >15 minutes (measured via playtesting)
+- **Bot Quality**: Win rates vary naturally in mixed difficulty games (validated by 1000-hand simulation)
+- **User Engagement (Mobile)**: Average session >20 minutes (measured via playtesting with 50+ mobile users)
 
 ### User Experience Metrics
-- **Time to First Hand**: <10 seconds from app launch
-- **Action Clarity**: 100% of playtesters understand available actions
-- **Visual Polish**: 95%+ playtesters rate UI as "professional"
+- **Time to First Hand (Mobile)**: <15 seconds from app launch on mobile device
+- **Action Clarity**: 100% of playtesters understand available actions (tested on mobile)
+- **Touch Gestures**: <2% mis-recognition rate (swipe, tap, long-press)
+- **Visual Polish (Mobile)**: 95%+ playtesters rate mobile UI as "professional"
+- **PWA Installation**: >30% installation rate after 3 game sessions
 
 ---
 
 ## Risk Mitigation
 
 ### Risk: Incorrect Poker Rules
-**Mitigation**: Comprehensive test suite with edge cases, manual verification against official rules
+**Mitigation**: Comprehensive test suite with edge cases (200+ tests), manual verification against official rules
 
 ### Risk: Poor Bot AI
-**Mitigation**: Playtest each bot level, iterate on strategy, benchmark bot vs bot win rates
+**Mitigation**: Playtest each bot level, iterate on strategy, validate win rates in mixed games
 
-### Risk: Performance Issues
-**Mitigation**: Profile animations, lazy load components, optimize render cycles
+### Risk: Mobile Performance Issues
+**Mitigation**: Profile on target devices (iPhone 11, Pixel 5), optimize animations for 60fps, battery profiling
+
+### Risk: Touch Gesture Conflicts
+**Mitigation**: Test gestures thoroughly, implement cancellation (reverse swipe), prevent conflicts with native scroll
+
+### Risk: Poor Mobile UX
+**Mitigation**: Test with real mobile users (20+ playtesters), ensure thumb zones accessible, test both orientations
 
 ### Risk: Scope Creep
-**Mitigation**: Strict adherence to standalone game scope, defer multiplayer/tournaments
+**Mitigation**: Strict adherence to mobile-first standalone game scope, defer desktop optimization and multiplayer
 
 ---
 
@@ -268,20 +307,21 @@ function calculateSidePots(players) {
 
 The following features are explicitly EXCLUDED from initial release:
 
-- Multiplayer/online gameplay
-- Tournament mode
-- Real money or cryptocurrency
-- User accounts and profiles (persistent across devices)
-- Leaderboards
-- Other poker variants (Omaha, 7-Card Stud)
-- Mobile apps (focus on web desktop/laptop)
-- Advanced statistics and hand history
-- Replay functionality
+- Multiplayer/online gameplay (requires backend infrastructure)
+- Tournament mode (structured blinds, elimination format, prize pools)
+- Real money or cryptocurrency integration
+- User accounts and profiles (persistent across devices via cloud sync)
+- Leaderboards (requires backend)
+- Other poker variants (Omaha, 7-Card Stud, Razz, etc.)
+- Native mobile apps (iOS App Store, Google Play - current is PWA only)
+- Desktop-optimized layouts (responsive design covers desktop but mobile is priority)
+- Advanced statistics and hand history (VPIP, PFR, aggression factor, hand replayer)
+- Multiplayer features (chat, spectator mode, friend invitations)
 
-These may be considered for future versions but are not part of the standalone game MVP.
+These may be considered for future versions but are not part of the standalone mobile game MVP.
 
 ---
 
-**Constitution Version**: 1.0
+**Constitution Version**: 2.0 (Mobile-First)
 **Last Updated**: 2025-11-18
-**Status**: Active - All principles enforced
+**Status**: Active - All principles enforced (including mobile-first)
