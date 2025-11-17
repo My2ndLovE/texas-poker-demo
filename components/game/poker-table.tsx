@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useGameStore } from '@/lib/stores/game-store';
 import { PlayingCard } from '../cards/playing-card';
 import { ActionButtons } from './action-buttons';
@@ -17,27 +18,31 @@ export function PokerTable() {
     dealerIndex,
     phase,
     actionHistory,
+    startNewHand,
   } = useGameStore();
 
   // Calculate total pot including current bets
   const currentBetsTotal = players.reduce((sum, p) => sum + p.currentBet, 0);
   const totalPot = pot.mainPot + pot.sidePots.reduce((sum, sp) => sum + sp.amount, 0) + currentBetsTotal;
 
-  // Get human player and evaluate their hand
-  const humanPlayer = players.find(p => !p.isBot);
-  let humanHandStrength = null;
-  if (humanPlayer && humanPlayer.holeCards.length === 2 && communityCards.length >= 3) {
+  // Get human player and evaluate their hand (memoized)
+  const humanPlayer = useMemo(() => players.find(p => !p.isBot), [players]);
+
+  const humanHandStrength = useMemo(() => {
+    if (!humanPlayer || humanPlayer.holeCards.length !== 2 || communityCards.length < 3) {
+      return null;
+    }
     try {
       const allCards = [...humanPlayer.holeCards, ...communityCards];
       const handResult = handEvaluator.evaluateHand(allCards);
-      humanHandStrength = {
+      return {
         rank: HAND_RANK_NAMES[handResult.rank],
         description: handResult.description,
       };
     } catch (e) {
-      // Ignore errors
+      return null;
     }
-  }
+  }, [humanPlayer, communityCards]);
 
   // Get last action for display
   const lastAction = actionHistory.length > 0 ? actionHistory[actionHistory.length - 1] : null;
@@ -54,21 +59,67 @@ export function PokerTable() {
     complete: 'Hand Complete',
   };
 
-  // Determine winners at showdown
-  const gameState = useGameStore.getState();
-  const playersInHand = getPlayersInHand(gameState);
-  let winners: string[] = [];
-  if (phase === 'showdown' || phase === 'complete') {
-    if (playersInHand.length > 1) {
-      const playerHands = playersInHand.map((p) => ({
-        playerId: p.id,
-        cards: [...p.holeCards, ...communityCards],
-      }));
-      winners = handEvaluator.findWinners(playerHands);
-    } else if (playersInHand.length === 1) {
-      winners = [playersInHand[0].id];
+  // Determine winners and their hands at showdown (memoized)
+  const showdownInfo = useMemo(() => {
+    if (phase !== 'showdown' && phase !== 'complete') {
+      return { winners: [], winnerHands: new Map() };
     }
-  }
+
+    const gameState = useGameStore.getState();
+    const playersInHand = getPlayersInHand(gameState);
+
+    if (playersInHand.length === 0) {
+      return { winners: [], winnerHands: new Map() };
+    }
+
+    if (playersInHand.length === 1) {
+      const winner = playersInHand[0];
+      const winnerHands = new Map();
+      if (winner.holeCards.length === 2 && communityCards.length >= 3) {
+        try {
+          const allCards = [...winner.holeCards, ...communityCards];
+          const handResult = handEvaluator.evaluateHand(allCards);
+          winnerHands.set(winner.id, {
+            rank: HAND_RANK_NAMES[handResult.rank],
+            description: handResult.description,
+          });
+        } catch (e) {
+          // Ignore
+        }
+      }
+      return { winners: [winner.id], winnerHands };
+    }
+
+    // Multiple players - evaluate all hands
+    const playerHands = playersInHand.map((p) => ({
+      playerId: p.id,
+      cards: [...p.holeCards, ...communityCards],
+    }));
+
+    const winners = handEvaluator.findWinners(playerHands);
+    const winnerHands = new Map();
+
+    // Evaluate winner hands
+    for (const winnerId of winners) {
+      const player = players.find(p => p.id === winnerId);
+      if (player && player.holeCards.length === 2) {
+        try {
+          const allCards = [...player.holeCards, ...communityCards];
+          const handResult = handEvaluator.evaluateHand(allCards);
+          winnerHands.set(winnerId, {
+            rank: HAND_RANK_NAMES[handResult.rank],
+            description: handResult.description,
+          });
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }
+
+    return { winners, winnerHands };
+  }, [phase, players, communityCards]);
+
+  const { winners, winnerHands } = showdownInfo;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-800 to-green-900 p-8">
@@ -114,13 +165,23 @@ export function PokerTable() {
 
           {/* Winner Announcement */}
           {(phase === 'showdown' || phase === 'complete') && winners.length > 0 && (
-            <div className="animate-pulse rounded-lg bg-yellow-500/90 px-6 py-3 text-center shadow-xl">
+            <div className="animate-pulse rounded-lg bg-yellow-500/90 px-6 py-4 text-center shadow-xl">
               <div className="text-sm font-bold text-gray-900">
                 {winners.length > 1 ? 'WINNERS' : 'WINNER'}
               </div>
               <div className="text-lg font-bold text-gray-900">
                 {winners.map(wId => players.find(p => p.id === wId)?.name).join(', ')}
               </div>
+              {winners.length === 1 && winnerHands.has(winners[0]) && (
+                <div className="mt-1 text-sm font-semibold text-gray-800">
+                  {winnerHands.get(winners[0])?.rank}
+                </div>
+              )}
+              {winners.length > 1 && (
+                <div className="mt-1 text-xs text-gray-800">
+                  Split Pot
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -222,15 +283,24 @@ export function PokerTable() {
 
               {/* Hole Cards */}
               <div className="flex gap-1">
-                {isHuman && player.holeCards.length > 0 ? (
-                  player.holeCards.map((card, i) => <PlayingCard key={i} card={card} />)
-                ) : (
-                  player.holeCards.length > 0 && (
-                    <>
-                      <PlayingCard faceDown />
-                      <PlayingCard faceDown />
-                    </>
-                  )
+                {player.holeCards.length > 0 && (
+                  <>
+                    {/* Show cards if: human player, OR showdown/complete phase and player didn't fold */}
+                    {(isHuman || ((phase === 'showdown' || phase === 'complete') && player.status !== 'folded')) ? (
+                      player.holeCards.map((card, i) => (
+                        <PlayingCard
+                          key={i}
+                          card={card}
+                          className={isWinner ? 'ring-2 ring-green-400' : ''}
+                        />
+                      ))
+                    ) : (
+                      <>
+                        <PlayingCard faceDown />
+                        <PlayingCard faceDown />
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -239,7 +309,7 @@ export function PokerTable() {
       </div>
 
       {/* Human Player Hand Strength */}
-      {humanHandStrength && humanPlayer && (
+      {humanHandStrength && humanPlayer && phase !== 'showdown' && phase !== 'complete' && (
         <div className="mt-4 rounded-lg bg-black/40 px-6 py-3 backdrop-blur-sm">
           <div className="text-center">
             <div className="text-sm text-white/70">Your Hand</div>
@@ -249,10 +319,24 @@ export function PokerTable() {
         </div>
       )}
 
+      {/* Next Hand Button at Showdown */}
+      {phase === 'complete' && (
+        <div className="mt-6">
+          <button
+            onClick={startNewHand}
+            className="rounded-lg bg-green-600 px-8 py-4 text-xl font-bold text-white shadow-lg transition hover:bg-green-700 hover:scale-105"
+          >
+            Next Hand
+          </button>
+        </div>
+      )}
+
       {/* Action Buttons for Human Player */}
-      <div className="mt-4">
-        <ActionButtons />
-      </div>
+      {phase !== 'complete' && phase !== 'showdown' && (
+        <div className="mt-4">
+          <ActionButtons />
+        </div>
+      )}
     </div>
   );
 }

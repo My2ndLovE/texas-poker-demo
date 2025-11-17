@@ -41,15 +41,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     // Check if hand is complete
     const currentState = get();
-    if (currentState.phase === 'complete') {
-      // Wait then start new hand
-      setTimeout(() => {
-        get().startNewHand();
-      }, 3000);
-    } else {
-      // Process bot actions
+    if (currentState.phase !== 'complete') {
+      // Process bot actions if game is still ongoing
       setTimeout(() => get().processBotActions(), 500);
     }
+    // Hand complete - wait for user to click "Next Hand" button
   },
 
   // Process bot actions automatically
