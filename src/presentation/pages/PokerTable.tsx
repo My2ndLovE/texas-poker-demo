@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '@/state-management/gameStore';
 import { PlayerSeat } from '../components/game/PlayerSeat';
@@ -19,6 +19,7 @@ export const PokerTable: React.FC = () => {
     updateStats,
   } = useGameStore();
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const lastUpdatedHandRef = useRef<number>(0);
 
   useEffect(() => {
     if (gameState && gameState.phase === GamePhase.WaitingToStart) {
@@ -26,18 +27,24 @@ export const PokerTable: React.FC = () => {
     }
   }, [gameState, startNewHand]);
 
-  // Update stats when hand completes
+  // Update stats when hand completes (only once per hand)
   useEffect(() => {
-    if (gameState && gameState.phase === GamePhase.HandComplete && gameState.handResult) {
+    if (
+      gameState &&
+      gameState.phase === GamePhase.HandComplete &&
+      gameState.handResult &&
+      gameState.handNumber > lastUpdatedHandRef.current
+    ) {
       const humanPlayer = gameState.players.find((p) => !p.isBot);
       if (humanPlayer && gameState.handResult) {
         const winner = gameState.handResult.winners.find((w) => w.playerId === humanPlayer.id);
         const isWinner = !!winner;
         const wonAmount = winner ? winner.amount : 0;
         updateStats(wonAmount, gameState.pot.totalPot, isWinner);
+        lastUpdatedHandRef.current = gameState.handNumber;
       }
     }
-  }, [gameState?.phase, gameState?.handResult, gameState?.players, gameState?.pot.totalPot, updateStats]);
+  }, [gameState?.phase, gameState?.handNumber, gameState?.handResult, updateStats]);
 
   // Extract last action for each player from action history
   const playerLastActions = useMemo(() => {
@@ -351,8 +358,8 @@ export const PokerTable: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gray-800 rounded">
                     <span className="text-gray-400">Profit/Loss:</span>
-                    <span className={`font-bold ${sessionStats.totalWinnings >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {sessionStats.totalWinnings >= 0 ? '+' : ''}${sessionStats.totalWinnings}
+                    <span className={`font-bold ${humanPlayer && humanPlayer.chips >= sessionStats.startingChips ? 'text-green-400' : 'text-red-400'}`}>
+                      {humanPlayer && humanPlayer.chips >= sessionStats.startingChips ? '+' : ''}${humanPlayer ? humanPlayer.chips - sessionStats.startingChips : 0}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gray-800 rounded">

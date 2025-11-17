@@ -474,14 +474,32 @@ export class GameEngine {
   }
 
   endHand(state: GameState): GameState {
-    // Move dealer button
-    const newDealerIndex = this.positionRules.getNextDealerIndex(
-      state.players,
-      state.dealerIndex
-    );
-
     // Remove players with no chips
     const remainingPlayers = state.players.filter((p) => p.chips > 0);
+
+    // Find the current dealer in the remaining players
+    let newDealerIndex = 0;
+    if (remainingPlayers.length > 0) {
+      // Try to find the next player clockwise from the current dealer
+      const currentDealerSeatIndex = state.players[state.dealerIndex].seatIndex;
+
+      // Find next active player's seat index after current dealer
+      let found = false;
+      for (let i = 0; i < state.players.length; i++) {
+        const checkSeatIndex = (currentDealerSeatIndex + 1 + i) % state.players.length;
+        const playerAtSeat = remainingPlayers.find((p) => p.seatIndex === checkSeatIndex);
+        if (playerAtSeat) {
+          newDealerIndex = remainingPlayers.indexOf(playerAtSeat);
+          found = true;
+          break;
+        }
+      }
+
+      // If not found (shouldn't happen), default to 0
+      if (!found) {
+        newDealerIndex = 0;
+      }
+    }
 
     return {
       ...state,

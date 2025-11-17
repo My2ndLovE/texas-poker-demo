@@ -88,6 +88,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { gameState, gameEngine } = get();
     if (!gameState) return;
 
+    // Check if enough players to start (minimum 2)
+    const activePlayers = gameState.players.filter((p) => p.chips > 0);
+    if (activePlayers.length < 2) {
+      return; // Not enough players to start a hand
+    }
+
     const newState = gameEngine.startHand(gameState);
     set({ gameState: newState });
 
