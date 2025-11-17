@@ -2,6 +2,8 @@ import { Player } from '../game-logic/models/Player';
 import { GameState } from '../game-logic/models/GameState';
 import { Action, createAction, ActionType } from '../game-logic/models/Action';
 import { bettingRules } from '../game-logic/rules/BettingRules';
+import { handEvaluator } from '../game-logic/evaluation/HandEvaluator';
+import { HandRank } from '../game-logic/models/Hand';
 
 // Simple bot AI for MVP - can be enhanced later
 export class SimpleBot {
@@ -92,8 +94,54 @@ export class SimpleBot {
       return Math.min(1, (avgRank / 14) * 0.5 + suited);
     }
 
-    // Post-flop: random for now (would use hand evaluator in full version)
-    return Math.random() * 0.5 + 0.3;
+    // Post-flop: evaluate actual hand strength
+    try {
+      const allCards = [...player.holeCards, ...state.communityCards];
+      const handResult = handEvaluator.evaluateHand(allCards);
+
+      // Convert hand rank to strength (0-1)
+      // Higher ranks are better
+      const rankStrength = handResult.rank / 9; // RoyalFlush is 9, HighCard is 0
+
+      // Adjust based on specific hand
+      switch (handResult.rank) {
+        case HandRank.RoyalFlush:
+        case HandRank.StraightFlush:
+          return 1.0;
+        case HandRank.FourOfAKind:
+          return 0.95;
+        case HandRank.FullHouse:
+          return 0.85;
+        case HandRank.Flush:
+          return 0.75;
+        case HandRank.Straight:
+          return 0.65;
+        case HandRank.ThreeOfAKind:
+          return 0.55;
+        case HandRank.TwoPair:
+          return 0.45;
+        case HandRank.Pair: {
+          // Stronger pairs are better
+          const rank1Value = this.getRankValue(player.holeCards[0].rank);
+          const rank2Value = this.getRankValue(player.holeCards[1].rank);
+          const pairStrength = Math.max(rank1Value, rank2Value) / 14;
+          return 0.25 + pairStrength * 0.15; // 0.25-0.40
+        }
+        case HandRank.HighCard:
+        default: {
+          // High card strength based on highest card
+          const rank1Value = this.getRankValue(player.holeCards[0].rank);
+          const rank2Value = this.getRankValue(player.holeCards[1].rank);
+          const highCard = Math.max(rank1Value, rank2Value);
+          return 0.1 + (highCard / 14) * 0.15; // 0.10-0.25
+        }
+      }
+    } catch (e) {
+      // Fallback to preflop evaluation if error
+      const rank1Value = this.getRankValue(card1.rank);
+      const rank2Value = this.getRankValue(card2.rank);
+      return (rank1Value + rank2Value) / 28;
+    }
   }
 
   private getRankValue(rank: string): number {

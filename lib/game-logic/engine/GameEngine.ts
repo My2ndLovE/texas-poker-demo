@@ -61,7 +61,7 @@ export class GameEngine {
     this.deck.reset();
     this.deck.shuffle();
 
-    // Reset player states
+    // Reset player states and eliminate players with no chips
     newState.players = newState.players.map((p) => ({
       ...p,
       holeCards: [],
@@ -69,6 +69,13 @@ export class GameEngine {
       totalBet: 0,
       status: p.chips > 0 ? 'active' : 'eliminated',
     }));
+
+    // Check if we have enough players to continue
+    const activePlayers = newState.players.filter((p) => p.status !== 'eliminated');
+    if (activePlayers.length < 2) {
+      newState.phase = 'complete';
+      return newState;
+    }
 
     // Calculate positions
     const positions = positionRules.calculatePositions(newState);
@@ -144,10 +151,12 @@ export class GameEngine {
       case 'raise':
         const raiseAmount = Math.min(action.amount, player.chips);
         player.chips -= raiseAmount;
+        const previousBet = newState.currentBet;
         player.currentBet += raiseAmount;
         player.totalBet += raiseAmount;
         newState.currentBet = player.currentBet;
-        newState.minRaise = raiseAmount - (newState.currentBet - raiseAmount);
+        // Min raise is the size of this raise
+        newState.minRaise = player.currentBet - previousBet;
         newState.lastActionIndex = newState.currentPlayerIndex;
         if (player.chips === 0) player.status = 'all-in';
         break;
@@ -155,11 +164,16 @@ export class GameEngine {
       case 'all-in':
         const allInAmount = player.chips;
         player.chips = 0;
+        const previousBetAllIn = newState.currentBet;
         player.currentBet += allInAmount;
         player.totalBet += allInAmount;
         player.status = 'all-in';
+        // If all-in raises the current bet, update minRaise
         if (player.currentBet > newState.currentBet) {
+          const raiseSize = player.currentBet - previousBetAllIn;
           newState.currentBet = player.currentBet;
+          newState.minRaise = raiseSize;
+          newState.lastActionIndex = newState.currentPlayerIndex;
         }
         break;
     }
@@ -186,14 +200,36 @@ export class GameEngine {
       (p) => p.status === 'active' || p.status === 'all-in'
     );
 
+    // If only one player left, round is complete
     if (playersInHand.length <= 1) return true;
 
     const activePlayers = playersInHand.filter((p) => p.status === 'active');
+
+    // If no active players left (all folded or all-in), round is complete
     if (activePlayers.length === 0) return true;
 
     // All players must have equal bets (or be all-in)
     const maxBet = Math.max(...playersInHand.map((p) => p.currentBet));
-    return playersInHand.every((p) => p.currentBet === maxBet || p.status === 'all-in');
+    const allBetsEqual = playersInHand.every((p) => p.currentBet === maxBet || p.status === 'all-in');
+
+    if (!allBetsEqual) return false;
+
+    // Check if we've come back around to the player after the last raiser
+    // or if there was no raise yet (lastActionIndex === -1 or initial position)
+    if (state.lastActionIndex === -1) {
+      // First round, need to get back to big blind or first to act
+      return state.currentPlayerIndex === state.bigBlindIndex ||
+             (activePlayers.length === 1 && allBetsEqual);
+    }
+
+    // We need the current player to be the one after the last raiser
+    // (meaning everyone has had a chance to respond to the last raise)
+    const nextAfterLastAction = positionRules.getNextActivePlayerIndex(
+      state.players,
+      state.lastActionIndex
+    );
+
+    return state.currentPlayerIndex === nextAfterLastAction;
   }
 
   // Advance to next phase

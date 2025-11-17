@@ -15,7 +15,9 @@ export function PokerTable() {
     phase,
   } = useGameStore();
 
-  const totalPot = pot.mainPot + pot.sidePots.reduce((sum, sp) => sum + sp.amount, 0);
+  // Calculate total pot including current bets
+  const currentBetsTotal = players.reduce((sum, p) => sum + p.currentBet, 0);
+  const totalPot = pot.mainPot + pot.sidePots.reduce((sum, sp) => sum + sp.amount, 0) + currentBetsTotal;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-800 to-green-900 p-8">
