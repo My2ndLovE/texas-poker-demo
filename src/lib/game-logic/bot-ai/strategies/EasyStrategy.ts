@@ -5,7 +5,7 @@
  */
 
 import type { GameState } from '../../models/GameState';
-import type { Action, ActionType } from '../../models/Action';
+import type { Action } from '../../models/Action';
 import { createAction } from '../../models/Action';
 import { getValidActions, getCallAmount, getMinRaise } from '../../rules/BettingRules';
 

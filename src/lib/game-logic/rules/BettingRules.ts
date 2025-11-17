@@ -4,7 +4,6 @@
  */
 
 import type { GameState } from '../models/GameState';
-import type { Player } from '../models/Player';
 import type { ActionType } from '../models/Action';
 
 /**

@@ -3,13 +3,12 @@
  * Orchestrates game flow and state transitions
  */
 
-import type { GameState, BettingRound } from '../models/GameState';
-import type { Player } from '../models/Player';
-import type { Action, ActionType } from '../models/Action';
+import type { GameState } from '../models/GameState';
+import type { PlayerStatus } from '../models/Player';
+import type { Action } from '../models/Action';
 import { Deck } from '../deck/Deck';
 import { getSmallBlindPosition, getBigBlindPosition, getUTGPosition, getFirstToActPostFlop, rotateDealer } from '../rules/PositionRules';
 import { postSmallBlind, postBigBlind } from '../rules/BlindRules';
-import { isBettingRoundComplete } from '../rules/BettingRules';
 import { calculatePots } from '../pot/PotCalculator';
 import { findWinners } from '../evaluation/HandEvaluator';
 
@@ -28,17 +27,23 @@ export class GameEngine {
 		this.deck.reset();
 
 		// Reset players for new hand
-		const players = state.players.map((p) => ({
-			...p,
-			cards: [],
-			bet: 0,
-			totalBet: 0,
-			status: p.chips > 0 ? ('active' as const) : ('eliminated' as const),
-			hasActed: false,
-			isDealer: false,
-			isSmallBlind: false,
-			isBigBlind: false
-		}));
+		const players = state.players.map((p) => {
+			let status: PlayerStatus = 'active';
+			if (p.chips === 0) {
+				status = 'eliminated';
+			}
+			return {
+				...p,
+				cards: [],
+				bet: 0,
+				totalBet: 0,
+				status,
+				hasActed: false,
+				isDealer: false,
+				isSmallBlind: false,
+				isBigBlind: false
+			};
+		});
 
 		// Set dealer, blinds
 		const dealerIndex = state.dealerIndex;
@@ -55,9 +60,9 @@ export class GameEngine {
 		const sbAmount = postSmallBlind(players[sbPos], state.smallBlind);
 		const bbAmount = postBigBlind(players[bbPos], state.bigBlind);
 
-		// Deal hole cards (2 to each player)
+		// Deal hole cards (2 to each active player)
 		for (const player of players) {
-			if (player.status === 'active' || player.status === 'all-in') {
+			if (player.status === 'active') {
 				player.cards = this.deck.deal(2);
 			}
 		}

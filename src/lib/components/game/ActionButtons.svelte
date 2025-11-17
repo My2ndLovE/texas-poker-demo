@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { applyPlayerAction, gameStore, humanPlayer, isHumanTurn } from '$stores/gameStore';
 	import { getValidActions, getCallAmount, getMinRaise } from '$game/rules/BettingRules';
+	import { createAction } from '$game/models/Action';
 	import type { ActionType } from '$game/models/Action';
 
 	interface Props {
@@ -28,18 +29,18 @@
 
 	function handleFold() {
 		if (!$humanPlayer) return;
-		applyPlayerAction({ type: 'fold', playerId: $humanPlayer.id, amount: 0 });
+		applyPlayerAction(createAction('fold', $humanPlayer.id, 0));
 	}
 
 	function handleCheck() {
 		if (!$humanPlayer) return;
-		applyPlayerAction({ type: 'check', playerId: $humanPlayer.id, amount: 0 });
+		applyPlayerAction(createAction('check', $humanPlayer.id, 0));
 	}
 
 	function handleCall() {
 		if (!$humanPlayer) return;
 		const amount = Math.min(callAmount, $humanPlayer.chips);
-		applyPlayerAction({ type: 'call', playerId: $humanPlayer.id, amount });
+		applyPlayerAction(createAction('call', $humanPlayer.id, amount));
 	}
 
 	function handleBet() {
@@ -58,13 +59,13 @@
 
 	function handleAllIn() {
 		if (!$humanPlayer) return;
-		applyPlayerAction({ type: 'all-in', playerId: $humanPlayer.id, amount: $humanPlayer.chips });
+		applyPlayerAction(createAction('all-in', $humanPlayer.id, $humanPlayer.chips));
 	}
 
 	function confirmRaise() {
 		if (!$humanPlayer) return;
 		const actionType = $gameStore?.currentBet === 0 ? 'bet' : 'raise';
-		applyPlayerAction({ type: actionType, playerId: $humanPlayer.id, amount: raiseAmount });
+		applyPlayerAction(createAction(actionType, $humanPlayer.id, raiseAmount));
 		showRaiseSlider = false;
 	}
 

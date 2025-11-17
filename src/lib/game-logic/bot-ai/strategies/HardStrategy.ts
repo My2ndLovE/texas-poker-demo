@@ -10,7 +10,8 @@ import { createAction } from '../../models/Action';
 import { getValidActions, getCallAmount, getMinRaise } from '../../rules/BettingRules';
 
 export class HardStrategy {
-	private opponentStats: Map<string, { vpip: number; pfr: number; aggression: number }> = new Map();
+	// Reserved for future opponent tracking
+	private _opponentStats: Map<string, { vpip: number; pfr: number; aggression: number }> = new Map();
 
 	/**
 	 * Get bot action with advanced strategy
@@ -180,7 +181,7 @@ export class HardStrategy {
 			},
 			{} as Record<string, number>
 		);
-		const maxSuitCount = Math.max(...Object.values(suitCounts));
+		const maxSuitCount = Math.max(...(Object.values(suitCounts) as number[]));
 
 		// Check for straight draws
 		const hasConnectors =
@@ -206,7 +207,7 @@ export class HardStrategy {
 	private calculateBetSize(
 		potSize: number,
 		handStrength: number,
-		boardTexture: string
+		_boardTexture: string
 	): number {
 		// Value bet sizing
 		if (handStrength > 0.8) {
@@ -219,7 +220,7 @@ export class HardStrategy {
 		return Math.floor(potSize * 0.4);
 	}
 
-	private calculateRaiseSize(potSize: number, currentBet: number, handStrength: number): number {
+	private calculateRaiseSize(potSize: number, _currentBet: number, handStrength: number): number {
 		if (handStrength > 0.85) {
 			return Math.floor(potSize * 1.2);
 		}
