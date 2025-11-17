@@ -71,7 +71,7 @@ export const pokerMachine = createMachine(
 
           // Preflop betting round
           preflop: {
-            entry: 'startBettingRound',
+            entry: 'setPreflopPlayer',
             on: {
               PLAYER_ACTION: {
                 actions: 'applyAction',
@@ -360,30 +360,35 @@ export const pokerMachine = createMachine(
         };
       }),
 
+      setPreflopPlayer: assign(({ context }) => {
+        // Set first player to act in preflop (left of big blind)
+        // Do NOT reset currentBet since blinds are already posted
+        const bigBlindPos =
+          context.players.length === 2
+            ? (context.dealerIndex + 1) % context.players.length
+            : (context.dealerIndex + 2) % context.players.length;
+        const firstPlayerIndex = (bigBlindPos + 1) % context.players.length;
+
+        return {
+          currentPlayerIndex: firstPlayerIndex,
+          actionHistory: [], // Reset action history for new betting round
+        };
+      }),
+
       startBettingRound: assign(({ context }) => {
-        // Reset current bets for all players
+        // Reset current bets for all players (used for postflop rounds)
         const updatedPlayers = context.players.map((player) => ({
           ...player,
           currentBet: 0,
         }));
 
-        // Find first active player to act (left of big blind for preflop, left of dealer otherwise)
-        let firstPlayerIndex: number;
-        if (context.gamePhase === 'preflop') {
-          // Preflop: action starts left of big blind
-          const bigBlindPos =
-            context.players.length === 2
-              ? (context.dealerIndex + 1) % context.players.length
-              : (context.dealerIndex + 2) % context.players.length;
-          firstPlayerIndex = (bigBlindPos + 1) % context.players.length;
-        } else {
-          // Postflop: action starts left of dealer
-          firstPlayerIndex = (context.dealerIndex + 1) % context.players.length;
-        }
+        // Postflop: action starts left of dealer
+        const firstPlayerIndex = (context.dealerIndex + 1) % context.players.length;
 
         return {
           players: updatedPlayers,
           currentPlayerIndex: firstPlayerIndex,
+          actionHistory: [], // Reset action history for new betting round
         };
       }),
 
@@ -622,25 +627,27 @@ export const pokerMachine = createMachine(
           return true;
         }
 
-        // Check if there are any actions in history for current phase
-        const currentPhaseActions = context.actionHistory.filter(() => {
-          // Simple check: if we have any actions, assume they're for current phase
-          // In a more sophisticated implementation, we'd track phase with each action
-          return true;
-        });
-
-        // Need at least one action per active player
-        if (currentPhaseActions.length < activePlayers.length) {
+        // All active players must have acted at least once
+        // Since actionHistory is reset at start of each betting round, we can use its length
+        if (context.actionHistory.length < activePlayers.length) {
           return false;
         }
 
         // Check if all active players have equal bets
         const activeBets = activePlayers.map((p) => p.currentBet);
-        const maxBet = Math.max(...activeBets);
+        const maxBet = Math.max(...activeBets, 0);
 
         const allBetsEqual = activePlayers.every((p) => p.currentBet === maxBet);
 
-        return allBetsEqual;
+        // If bets are not equal, round is not complete
+        if (!allBetsEqual) {
+          return false;
+        }
+
+        // Additional check: ensure the current player index has cycled back
+        // This handles the case where someone raises and we need to go around again
+        // The round is complete when everyone has acted AND bets are equal
+        return true;
       },
 
       moreThanOnePlayerRemaining: ({ context }) => {
