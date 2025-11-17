@@ -1,8 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useGameStore } from './store/gameStore'
 import { PokerTable } from './components/poker-table/PokerTable'
 import { ActionButtons } from './components/actions/ActionButtons'
 import { ActionLog } from './components/game-ui/ActionLog'
+import { HandStrengthIndicator } from './components/game-ui/HandStrengthIndicator'
+import { Statistics } from './components/game-ui/Statistics'
+import { SettingsPanel } from './components/game-ui/SettingsPanel'
 
 function App() {
   const {
@@ -14,6 +17,8 @@ function App() {
     dealerIndex,
     actionLog,
     lastWinners,
+    statistics,
+    settings,
     initializeGame,
     playerAction,
     getCurrentPlayer,
@@ -21,7 +26,10 @@ function App() {
     calculateCallAmount,
     calculateMinRaise,
     startNewHand,
+    updateSettings,
   } = useGameStore()
+
+  const [showSettings, setShowSettings] = useState(false)
 
   // Initialize game on mount
   useEffect(() => {
@@ -66,6 +74,18 @@ function App() {
                 </div>
               </div>
             )}
+
+            {/* Settings button */}
+            <button
+              onClick={() => setShowSettings(true)}
+              className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+              title="Game Settings"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
 
             {/* New hand button */}
             <button
@@ -146,7 +166,7 @@ function App() {
             {/* Hand complete message with winners */}
             {gamePhase === 'handComplete' && lastWinners.length > 0 && (
               <div className="mt-8 text-center">
-                <div className="inline-block bg-green-600 px-8 py-6 rounded-lg border border-green-500 shadow-xl">
+                <div className="inline-block bg-green-600 px-8 py-6 rounded-lg border border-green-500 shadow-xl animate-celebrate">
                   <div className="text-white text-2xl font-bold mb-4">
                     {lastWinners.length > 1 ? 'Split Pot!' : 'Winner!'}
                   </div>
@@ -179,9 +199,19 @@ function App() {
             )}
           </div>
 
-          {/* Right sidebar - placeholder for future features */}
-          <aside className="w-64 flex-shrink-0">
-            {/* Could add hand strength indicator here later */}
+          {/* Right sidebar - Hand strength and statistics */}
+          <aside className="w-64 flex-shrink-0 space-y-4">
+            {/* Hand strength indicator */}
+            {humanPlayer && humanPlayer.holeCards.length === 2 && (
+              <HandStrengthIndicator
+                holeCards={humanPlayer.holeCards}
+                communityCards={communityCards}
+                gamePhase={gamePhase}
+              />
+            )}
+
+            {/* Statistics panel */}
+            <Statistics stats={statistics} />
           </aside>
         </div>
       </main>
@@ -199,6 +229,14 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Settings panel modal */}
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onApply={updateSettings}
+        currentSettings={settings}
+      />
     </div>
   )
 }

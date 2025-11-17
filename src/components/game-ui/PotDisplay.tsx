@@ -10,7 +10,7 @@ export function PotDisplay({ amount, sidePots = [], className = '' }: PotDisplay
   return (
     <div className={`${className}`}>
       {/* Main pot display */}
-      <div className="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full px-6 py-3 shadow-2xl border-4 border-yellow-500/50 transform hover:scale-105 transition-transform">
+      <div className={`bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full px-6 py-3 shadow-2xl border-4 border-yellow-500/50 transform hover:scale-105 transition-transform ${totalPot > 0 ? 'animate-pulseGlow' : ''}`}>
         <div className="text-center">
           <div className="text-yellow-200 text-xs font-semibold uppercase tracking-wider">
             Pot

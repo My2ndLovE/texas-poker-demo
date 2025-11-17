@@ -16,6 +16,24 @@ export interface ActionLog {
   timestamp: number
 }
 
+export interface PlayerStatistics {
+  handsPlayed: number
+  handsWon: number
+  biggestPot: number
+  totalWinnings: number
+  currentStreak: number
+  startingChips: number
+}
+
+export interface GameSettings {
+  numberOfBots: number
+  botDifficulty: 'easy' | 'medium' | 'hard' | 'mixed'
+  startingChips: number
+  smallBlind: number
+  bigBlind: number
+  animationSpeed: 'slow' | 'normal' | 'fast'
+}
+
 interface GameState {
   // Players
   players: Player[]
@@ -41,6 +59,12 @@ interface GameState {
   actionLog: ActionLog[]
   lastWinners: { playerId: string; amount: number; handDescription: string }[]
 
+  // Statistics
+  statistics: PlayerStatistics
+
+  // Settings
+  settings: GameSettings
+
   // Helpers
   handEvaluator: HandEvaluator
   potCalculator: PotCalculator
@@ -48,7 +72,7 @@ interface GameState {
   botAI: BotAI
 
   // Actions
-  initializeGame: (playerCount: number) => void
+  initializeGame: (playerCount?: number) => void
   startNewHand: () => void
   dealCards: () => void
   advancePhase: () => void
@@ -60,6 +84,7 @@ interface GameState {
   calculateCallAmount: () => number
   calculateMinRaise: () => number
   addActionLog: (playerName: string, action: string, amount?: number) => void
+  updateSettings: (settings: GameSettings) => void
 }
 
 const createPlayer = (id: string, name: string, chips: number, isBot: boolean): Player => {
@@ -82,6 +107,26 @@ export const useGameStore = create<GameState>((set, get) => ({
   bigBlind: 20,
   actionLog: [],
   lastWinners: [],
+
+  // Statistics
+  statistics: {
+    handsPlayed: 0,
+    handsWon: 0,
+    biggestPot: 0,
+    totalWinnings: 0,
+    currentStreak: 0,
+    startingChips: 1000,
+  },
+
+  // Settings
+  settings: {
+    numberOfBots: 5,
+    botDifficulty: 'medium',
+    startingChips: 1000,
+    smallBlind: 10,
+    bigBlind: 20,
+    animationSpeed: 'normal',
+  },
 
   // Helpers
   handEvaluator: new HandEvaluator(),
@@ -380,10 +425,35 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     })
 
-    set({
-      potAmount: 0,
-      gamePhase: 'handComplete',
-      lastWinners: winnerResults,
+    // Update statistics if human player won
+    const humanPlayer = get().players.find(p => p.id === get().humanPlayerId)
+    const humanWon = winnerResults.some(w => w.playerId === get().humanPlayerId)
+    const humanWinAmount = winnerResults.find(w => w.playerId === get().humanPlayerId)?.amount || 0
+
+    set((state) => {
+      const newStats = { ...state.statistics }
+      newStats.handsPlayed += 1
+
+      if (humanWon) {
+        newStats.handsWon += 1
+        newStats.currentStreak += 1
+        newStats.totalWinnings += (humanWinAmount - (state.statistics.startingChips - (humanPlayer?.chips || 0)))
+
+        if (potAmount > newStats.biggestPot) {
+          newStats.biggestPot = potAmount
+        }
+      } else {
+        newStats.currentStreak = 0
+        const lostAmount = state.statistics.startingChips - (humanPlayer?.chips || 0)
+        newStats.totalWinnings -= lostAmount
+      }
+
+      return {
+        potAmount: 0,
+        gamePhase: 'handComplete',
+        lastWinners: winnerResults,
+        statistics: newStats,
+      }
     })
   },
 
@@ -525,5 +595,20 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     return get().bettingValidator.calculateMinRaise(context)
+  },
+
+  // Update game settings
+  updateSettings: (newSettings: GameSettings) => {
+    set({
+      settings: newSettings,
+      smallBlind: newSettings.smallBlind,
+      bigBlind: newSettings.bigBlind,
+    })
+
+    // Re-initialize game with new settings if needed
+    const currentPhase = get().gamePhase
+    if (currentPhase === 'waiting' || currentPhase === 'handComplete') {
+      get().initializeGame(newSettings.numberOfBots + 1)
+    }
   },
 }))

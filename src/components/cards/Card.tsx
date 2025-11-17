@@ -49,7 +49,7 @@ export function Card({ card, faceDown = false, size = 'medium', className = '' }
   if (!card || faceDown) {
     return (
       <div
-        className={`${sizeClass} ${className} bg-gradient-to-br from-blue-800 to-blue-900 rounded-lg border-2 border-blue-700 shadow-lg flex items-center justify-center relative overflow-hidden`}
+        className={`${sizeClass} ${className} bg-gradient-to-br from-blue-800 to-blue-900 rounded-lg border-2 border-blue-700 shadow-lg flex items-center justify-center relative overflow-hidden animate-dealCard`}
       >
         <div className="absolute inset-0 opacity-20">
           <div className="w-full h-full grid grid-cols-3 grid-rows-4 gap-1 p-2">
@@ -69,7 +69,7 @@ export function Card({ card, faceDown = false, size = 'medium', className = '' }
 
   return (
     <div
-      className={`${sizeClass} ${className} bg-white rounded-lg border-2 border-gray-300 shadow-lg p-2 flex flex-col justify-between relative transition-transform hover:scale-105`}
+      className={`${sizeClass} ${className} bg-white rounded-lg border-2 border-gray-300 shadow-lg p-2 flex flex-col justify-between relative transition-transform hover:scale-105 animate-dealCard`}
     >
       {/* Top left corner */}
       <div className="flex flex-col items-center leading-none">
