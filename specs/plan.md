@@ -19,106 +19,123 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 
 ## Technical Context
 
-### Technology Stack
+### Technology Stack (2025 Modern Stack)
 
-**Frontend Framework**: React 18.2+
-- **Why**: Component-based architecture perfect for complex UI (poker table, cards, actions)
-- **Hooks**: useState, useEffect, useReducer for component state
-- **Performance**: React.memo, useMemo, useCallback for optimization
-- **Styling**: Tailwind CSS for utility-first design, custom CSS for animations
+**Frontend Framework**: Next.js 15 (App Router)
+- **Why**: Superior to vanilla React for production apps - built-in optimization, better DX
+- **Static Export**: Fully client-side (no server) via `output: 'export'`
+- **Performance**: Automatic code-splitting, image optimization, font optimization
+- **Routing**: File-based routing (cleaner than React Router)
+- **Developer Experience**: Fast Refresh, TypeScript integration, built-in linting
 
 **Language**: TypeScript 5.x (Strict Mode)
 - **Why**: Type safety critical for poker logic correctness
 - **Strict**: No `any` types, complete type coverage
 - **Interfaces**: Strong typing for game state, actions, bot decisions
 - **Generics**: Reusable utility functions with type safety
+- **Zod**: Runtime validation for game state (catch bugs early)
 
 **State Management**: Zustand 4.x
 - **Why**: Simpler than Redux, perfect for client-side state
 - **Stores**: Separate stores for game state, UI state, settings
-- **Immer**: Built-in support for immutable state updates
+- **Persistence**: zustand/middleware for localStorage persistence
 - **DevTools**: Redux DevTools integration for debugging
 
-**Build Tool**: Vite 5.x
-- **Why**: Fast development server (<100ms HMR), optimized production builds
-- **Features**: ES modules, code-splitting, tree-shaking, minification
-- **Plugins**: TypeScript, React, PostCSS (for Tailwind)
+**UI Framework**: Tailwind CSS + shadcn/ui
+- **Tailwind**: Utility-first CSS, rapid development
+- **shadcn/ui**: High-quality, accessible components (built on Radix UI)
+- **Components**: Button, Modal, Slider, Tooltip - copy/paste, fully customizable
+- **Accessibility**: WCAG AA compliant out-of-box
+- **Theme**: Dark mode support built-in
 
-**Testing Framework**: Jest 29.x + React Testing Library
-- **Unit Tests**: Game logic (hand evaluation, pot calculation, bot AI)
-- **Component Tests**: UI components (buttons, cards, table layout)
-- **Integration Tests**: Full game flows (complete hands, multiple scenarios)
+**Animations**: Framer Motion 11.x
+- **Why**: Professional game animations (cards, chips, celebrations)
+- **Physics**: Spring-based animations feel natural
+- **Orchestration**: Sequence complex animations (deal cards → flip → slide chips)
+- **Gestures**: Drag, swipe support (future mobile version)
+- **Performance**: GPU-accelerated, 60fps
+
+**Testing Framework**: Vitest + Playwright
+- **Vitest**: Modern alternative to Jest - faster, better Vite integration
+- **Playwright**: E2E testing (complete poker hands, cross-browser)
 - **Coverage**: Target 80% for game logic, 60% for UI
+- **Visual Testing**: Screenshot comparison for UI regression
 
 **Hand Evaluation Library**: pokersolver (https://github.com/goldfire/pokersolver)
 - **Why**: Battle-tested with 2,700+ weekly downloads, used by 1,100+ repos, proven reliability
 - **Features**: 5-7 card evaluation, hand ranking, comparison, supports multiple game types
 - **Integration**: Simple synchronous API, TypeScript types via @types/pokersolver
-- **Performance**: 500k-1M hands/second (50-100x more than needed for 200+ players)
+- **Performance**: 500k-1M hands/second (50-100x more than needed)
 - **Adoption**: 414 GitHub stars, 7+ years production use, zero runtime dependencies
 - **Stability**: Mature, stable API - poker hand evaluation is a solved problem
+
+**Type Safety & Validation**: Zod 3.x
+- **Why**: Runtime validation for game state, settings, actions
+- **Safety**: Catch invalid states at runtime
+- **TypeScript**: Infer types from schemas (DRY principle)
+- **Error Messages**: User-friendly validation errors
 
 **Icons**: Lucide React
 - **Why**: Professional, tree-shakeable, 1000+ icons
 - **Usage**: Suits (♠ ♥ ♦ ♣), actions (fold, raise, all-in), UI (settings, stats)
 - **No Emojis**: Professional appearance, consistent design
 
-**Localization**: react-i18next
+**Localization**: react-i18next 14.x
 - **Why**: Industry standard, supports plural forms, interpolation
 - **Setup**: English default, infrastructure ready for Vietnamese, Thai, Chinese
 - **Keys**: No hardcoded strings, all text via t('key') function
 
+**Component Utilities**:
+- **class-variance-authority (cva)**: Type-safe component variants
+- **clsx**: Conditional className composition
+- **tailwind-merge**: Merge Tailwind classes without conflicts
+
 ---
 
-## Project Structure
+## Project Structure (Next.js 15)
 
 ```
-standalone-poker-game/
-├── src/
-│   ├── presentation/                  # React UI layer
-│   │   ├── components/
-│   │   │   ├── game/                  # Game-specific components
-│   │   │   │   ├── PokerTable.tsx     # Main table layout
-│   │   │   │   ├── PlayerSeat.tsx     # Individual player position
-│   │   │   │   ├── CommunityCards.tsx # Flop/turn/river cards
-│   │   │   │   ├── PotDisplay.tsx     # Pot amount with chips visualization
-│   │   │   │   ├── ActionButtons.tsx  # Fold/Call/Raise buttons
-│   │   │   │   ├── RaiseSlider.tsx    # Raise amount selector
-│   │   │   │   ├── ActionTimer.tsx    # Countdown timer
-│   │   │   │   ├── WinnerAnnouncement.tsx # Winner celebration
-│   │   │   │   ├── ActionLog.tsx      # Recent actions history
-│   │   │   │   └── DealerButton.tsx   # Dealer indicator
-│   │   │   ├── cards/
-│   │   │   │   ├── PlayingCard.tsx    # Single card component
-│   │   │   │   ├── CardBack.tsx       # Face-down card
-│   │   │   │   └── CardFront.tsx      # Face-up card with suit/rank
-│   │   │   ├── ui/                    # Reusable UI primitives
-│   │   │   │   ├── Button.tsx         # Styled button
-│   │   │   │   ├── Modal.tsx          # Dialog overlay
-│   │   │   │   ├── Slider.tsx         # Range input
-│   │   │   │   ├── Tooltip.tsx        # Hover tooltip
-│   │   │   │   └── Toast.tsx          # Notification system
-│   │   │   └── layout/
-│   │   │       ├── MainMenu.tsx       # Start screen
-│   │   │       ├── SettingsPanel.tsx  # Game settings
-│   │   │       ├── StatsPanel.tsx     # Session statistics
-│   │   │       └── GameOverScreen.tsx # End game summary
-│   │   ├── pages/
-│   │   │   ├── HomePage.tsx           # Main menu (Quick Play, Settings, etc.)
-│   │   │   ├── GamePage.tsx           # Active game table
-│   │   │   └── SettingsPage.tsx       # Full settings interface
-│   │   ├── hooks/
-│   │   │   ├── useGameState.ts        # Access game state from store
-│   │   │   ├── useGameActions.ts      # Dispatch game actions
-│   │   │   ├── useSettings.ts         # Access/modify settings
-│   │   │   ├── useAnimation.ts        # Animation control
-│   │   │   └── useKeyboardShortcuts.ts # Keyboard event handling
-│   │   └── styles/
-│   │       ├── global.css             # Global styles
-│   │       ├── table.css              # Poker table specific
-│   │       ├── cards.css              # Card designs
-│   │       └── animations.css         # Keyframe animations
-│   │
+texas-poker-game/
+├── app/                               # Next.js App Router
+│   ├── layout.tsx                     # Root layout
+│   ├── page.tsx                       # Home page (main menu)
+│   ├── game/
+│   │   └── page.tsx                   # Game page (poker table)
+│   ├── settings/
+│   │   └── page.tsx                   # Settings page
+│   ├── globals.css                    # Global styles (Tailwind)
+│   └── providers.tsx                  # Client providers (Zustand, i18n)
+│
+├── components/                        # React components
+│   ├── game/                          # Game-specific components
+│   │   ├── poker-table.tsx            # Main table layout
+│   │   ├── player-seat.tsx            # Individual player position
+│   │   ├── community-cards.tsx        # Flop/turn/river cards
+│   │   ├── pot-display.tsx            # Pot amount with chips visualization
+│   │   ├── action-buttons.tsx         # Fold/Call/Raise buttons
+│   │   ├── raise-slider.tsx           # Raise amount selector
+│   │   ├── action-timer.tsx           # Countdown timer
+│   │   ├── winner-announcement.tsx    # Winner celebration
+│   │   ├── action-log.tsx             # Recent actions history
+│   │   └── dealer-button.tsx          # Dealer indicator
+│   ├── cards/
+│   │   ├── playing-card.tsx           # Single card component
+│   │   ├── card-back.tsx              # Face-down card
+│   │   └── card-front.tsx             # Face-up card with suit/rank
+│   ├── ui/                            # shadcn/ui components (copy/paste)
+│   │   ├── button.tsx                 # Styled button (Radix)
+│   │   ├── dialog.tsx                 # Modal/Dialog (Radix)
+│   │   ├── slider.tsx                 # Range input (Radix)
+│   │   ├── tooltip.tsx                # Hover tooltip (Radix)
+│   │   ├── toast.tsx                  # Notification system (Radix)
+│   │   └── ...                        # Other shadcn/ui components
+│   └── layout/
+│       ├── main-menu.tsx              # Start screen
+│       ├── settings-panel.tsx         # Game settings
+│       ├── stats-panel.tsx            # Session statistics
+│       └── game-over-screen.tsx       # End game summary
+│
+├── lib/                               # Core logic (non-React)
 │   ├── game-logic/                    # Pure TypeScript game engine
 │   │   ├── engine/
 │   │   │   ├── GameEngine.ts          # Orchestrates game loop
@@ -176,67 +193,76 @@ standalone-poker-game/
 │   │   │   └── BoardAnalyzer.ts       # Analyze community cards (draws, made hands)
 │   │   └── BotOrchestrator.ts         # Main bot controller
 │   │
-│   ├── state-management/              # Zustand stores
-│   │   ├── gameStore.ts               # Game state (cards, pot, players, phase)
-│   │   ├── settingsStore.ts           # User settings (difficulty, chips, animations)
-│   │   ├── uiStore.ts                 # UI state (modals, dialogs, loading)
-│   │   └── statsStore.ts              # Session statistics (hands played, win rate)
+│   ├── stores/                        # Zustand stores
+│   │   ├── game-store.ts              # Game state (cards, pot, players, phase)
+│   │   ├── settings-store.ts          # User settings (difficulty, chips, animations)
+│   │   ├── ui-store.ts                # UI state (modals, dialogs, loading)
+│   │   └── stats-store.ts             # Session statistics (hands played, win rate)
 │   │
-│   ├── utils/                         # Shared utilities
-│   │   ├── formatters.ts              # Format numbers, chips, percentages
-│   │   ├── constants.ts               # Game constants (blind levels, timeouts)
-│   │   ├── logger.ts                  # Console logging wrapper
-│   │   └── storage.ts                 # localStorage wrapper for settings
+│   ├── schemas/                       # Zod validation schemas
+│   │   ├── game-state.schema.ts       # Game state validation
+│   │   ├── settings.schema.ts         # Settings validation
+│   │   └── action.schema.ts           # Action validation
 │   │
-│   ├── localization/                  # i18n resources
-│   │   ├── i18n.ts                    # i18next configuration
-│   │   ├── en/                        # English translations
-│   │   │   ├── game.json              # Game-related text
-│   │   │   ├── ui.json                # UI labels and buttons
-│   │   │   └── errors.json            # Error messages
-│   │   ├── vi/                        # Vietnamese (future)
-│   │   └── th/                        # Thai (future)
-│   │
-│   ├── assets/                        # Static assets
-│   │   ├── images/
-│   │   │   ├── cards/                 # Card images (PNG/SVG)
-│   │   │   ├── avatars/               # Bot avatars
-│   │   │   ├── chips/                 # Chip graphics
-│   │   │   └── table/                 # Table textures
-│   │   └── sounds/                    # Sound effects (optional)
-│   │       ├── card-deal.mp3
-│   │       ├── chip-slide.mp3
-│   │       ├── win-celebration.mp3
-│   │       └── timer-tick.mp3
-│   │
-│   ├── App.tsx                        # Root component
-│   ├── main.tsx                       # Entry point (React render)
-│   └── vite-env.d.ts                  # Vite type definitions
+│   └── utils/                         # Shared utilities
+│       ├── formatters.ts              # Format numbers, chips, percentages
+│       ├── constants.ts               # Game constants (blind levels, timeouts)
+│       ├── logger.ts                  # Console logging wrapper
+│       ├── storage.ts                 # localStorage wrapper for settings
+│       └── cn.ts                      # Tailwind class merge utility
 │
-├── tests/                             # Test files (mirror src structure)
+├── hooks/                             # Custom React hooks
+│   ├── use-game-state.ts              # Access game state from store
+│   ├── use-game-actions.ts            # Dispatch game actions
+│   ├── use-settings.ts                # Access/modify settings
+│   ├── use-animation.ts               # Animation control (Framer Motion)
+│   └── use-keyboard-shortcuts.ts      # Keyboard event handling
+│
+├── locales/                           # i18n resources
+│   ├── i18n.ts                        # i18next configuration
+│   ├── en/                            # English translations
+│   │   ├── game.json                  # Game-related text
+│   │   ├── ui.json                    # UI labels and buttons
+│   │   └── errors.json                # Error messages
+│   ├── vi/                            # Vietnamese (future)
+│   └── th/                            # Thai (future)
+│
+├── public/                            # Static assets
+│   ├── images/
+│   │   ├── cards/                     # Card images (PNG/SVG)
+│   │   ├── avatars/                   # Bot avatars
+│   │   ├── chips/                     # Chip graphics
+│   │   └── table/                     # Table textures
+│   └── sounds/                        # Sound effects (optional)
+│       ├── card-deal.mp3
+│       ├── chip-slide.mp3
+│       ├── win-celebration.mp3
+│       └── timer-tick.mp3
+│
+├── __tests__/                         # Test files (Vitest + Playwright)
 │   ├── unit/
 │   │   ├── game-logic/                # Game engine tests
-│   │   │   ├── HandEvaluator.test.ts  # Hand ranking tests (200+ cases)
-│   │   │   ├── PotCalculator.test.ts  # Side pot tests (50+ edge cases)
-│   │   │   ├── BettingRules.test.ts   # Min raise, all-in validation
-│   │   │   └── GameStateMachine.test.ts # Phase transitions
+│   │   │   ├── hand-evaluator.test.ts # Hand ranking tests (200+ cases)
+│   │   │   ├── pot-calculator.test.ts # Side pot tests (50+ edge cases)
+│   │   │   ├── betting-rules.test.ts  # Min raise, all-in validation
+│   │   │   └── game-state-machine.test.ts # Phase transitions
 │   │   └── bot-ai/                    # Bot AI tests
-│   │       ├── EasyStrategy.test.ts   # Verify Easy bot behavior
-│   │       ├── MediumStrategy.test.ts # Verify Medium bot behavior
-│   │       └── HardStrategy.test.ts   # Verify Hard bot behavior
+│   │       ├── easy-strategy.test.ts  # Verify Easy bot behavior
+│   │       ├── medium-strategy.test.ts # Verify Medium bot behavior
+│   │       └── hard-strategy.test.ts  # Verify Hard bot behavior
 │   ├── integration/
-│   │   ├── CompleteHand.test.ts       # Full hand flow (preflop→showdown)
-│   │   ├── MultiplayerAllIn.test.ts   # 3+ player all-in scenarios
-│   │   ├── HeadsUpRules.test.ts       # 2-player special rules
-│   │   └── BotVsBot.test.ts           # Bot-only games (validate balance)
+│   │   ├── complete-hand.test.ts      # Full hand flow (preflop→showdown)
+│   │   ├── multiplayer-all-in.test.ts # 3+ player all-in scenarios
+│   │   ├── heads-up-rules.test.ts     # 2-player special rules
+│   │   └── bot-vs-bot.test.ts         # Bot-only games (validate balance)
+│   ├── e2e/                           # Playwright E2E tests
+│   │   ├── complete-game.spec.ts      # Play complete game
+│   │   ├── settings.spec.ts           # Test settings changes
+│   │   └── keyboard-shortcuts.spec.ts # Test keyboard controls
 │   └── components/
-│       ├── PokerTable.test.tsx        # Table rendering tests
-│       ├── ActionButtons.test.tsx     # Button interactions
-│       └── RaiseSlider.test.tsx       # Slider validation
-│
-├── public/                            # Public assets (served as-is)
-│   ├── index.html                     # HTML entry point
-│   └── favicon.ico                    # App icon
+│       ├── poker-table.test.tsx       # Table rendering tests
+│       ├── action-buttons.test.tsx    # Button interactions
+│       └── raise-slider.test.tsx      # Slider validation
 │
 ├── docs/                              # Documentation
 │   ├── ARCHITECTURE.md                # Technical architecture guide
@@ -247,14 +273,16 @@ standalone-poker-game/
 ├── .github/                           # GitHub configuration
 │   └── workflows/
 │       ├── test.yml                   # Run tests on push
-│       └── deploy.yml                 # Deploy to GitHub Pages
+│       └── deploy.yml                 # Deploy to Vercel/Cloudflare
 │
 ├── package.json                       # NPM dependencies and scripts
 ├── tsconfig.json                      # TypeScript configuration (strict mode)
-├── vite.config.ts                     # Vite build configuration
-├── tailwind.config.js                 # Tailwind CSS configuration
-├── jest.config.js                     # Jest test configuration
-├── .eslintrc.js                       # ESLint rules
+├── next.config.js                     # Next.js configuration (static export)
+├── tailwind.config.ts                 # Tailwind CSS configuration
+├── components.json                    # shadcn/ui configuration
+├── vitest.config.ts                   # Vitest test configuration
+├── playwright.config.ts               # Playwright E2E configuration
+├── .eslintrc.json                     # ESLint rules (Next.js defaults)
 ├── .prettierrc                        # Prettier formatting
 ├── README.md                          # Project overview and setup
 └── CLAUDE.md                          # Instructions for Claude Code
@@ -546,89 +574,150 @@ interface UIState {
 
 ### 0.5 Animation Strategy
 
-**Approach**: CSS keyframe animations + React state transitions
+**Approach**: Framer Motion for professional game animations
 
 **Card Dealing Animation**:
-```css
-/* src/presentation/styles/animations.css */
-@keyframes card-deal {
-  0% {
-    transform: translate(0, 0) scale(0.5);
-    opacity: 0;
-  }
-  50% {
-    transform: translate(var(--card-x), var(--card-y)) scale(0.8);
-    opacity: 0.5;
-  }
-  100% {
-    transform: translate(var(--card-x), var(--card-y)) scale(1);
-    opacity: 1;
-  }
-}
-
-.card-dealing {
-  animation: card-deal 0.5s ease-out forwards;
-}
-```
-
-**Chip Movement**:
-```css
-@keyframes chip-slide {
-  0% {
-    transform: translate(var(--start-x), var(--start-y));
-  }
-  100% {
-    transform: translate(var(--end-x), var(--end-y));
-  }
-}
-
-.chip-sliding {
-  animation: chip-slide 0.4s ease-in-out forwards;
-}
-```
-
-**React Integration**:
 ```typescript
-// src/presentation/components/game/CommunityCards.tsx
-const CommunityCards: React.FC = () => {
-  const { communityCards, gamePhase } = useGameStore();
-  const [animatingCards, setAnimatingCards] = useState<Card[]>([]);
+// components/cards/playing-card.tsx
+import { motion } from 'framer-motion';
 
-  useEffect(() => {
-    if (gamePhase === 'flop' && communityCards.length === 3) {
-      // Trigger flop animation
-      setAnimatingCards(communityCards.slice(0, 3));
-      setTimeout(() => setAnimatingCards([]), 500);
-    }
-  }, [gamePhase, communityCards]);
+interface PlayingCardProps {
+  card: Card;
+  position: { x: number; y: number };
+  isAnimating?: boolean;
+}
+
+export const PlayingCard: React.FC<PlayingCardProps> = ({
+  card,
+  position,
+  isAnimating
+}) => {
+  return (
+    <motion.div
+      initial={{ x: 0, y: 0, scale: 0.5, opacity: 0 }}
+      animate={{
+        x: position.x,
+        y: position.y,
+        scale: 1,
+        opacity: 1,
+      }}
+      transition={{
+        type: 'spring',
+        stiffness: 300,
+        damping: 30,
+        duration: 0.5,
+      }}
+      className="card"
+    >
+      {/* Card content */}
+    </motion.div>
+  );
+};
+```
+
+**Chip Movement Animation**:
+```typescript
+// components/game/pot-display.tsx
+import { motion, useAnimate, stagger } from 'framer-motion';
+
+export const PotDisplay: React.FC = () => {
+  const [scope, animate] = useAnimate();
+
+  const animateChipsToPot = async (chipAmount: number) => {
+    await animate(
+      '.chip',
+      {
+        x: [0, 200],
+        y: [0, -50],
+        opacity: [1, 1, 0.8],
+      },
+      {
+        duration: 0.4,
+        ease: 'easeInOut',
+        delay: stagger(0.05) // Chips animate one after another
+      }
+    );
+  };
 
   return (
-    <div className="community-cards">
-      {communityCards.map((card, i) => (
-        <PlayingCard
-          key={i}
-          card={card}
-          className={animatingCards.includes(card) ? 'card-dealing' : ''}
-        />
-      ))}
+    <div ref={scope} className="pot-container">
+      {/* Pot content */}
     </div>
   );
 };
 ```
 
-**Animation Settings**:
-- **Off**: No animations, instant updates
-- **Fast**: 0.2s duration (50% of normal)
-- **Normal**: 0.4-0.5s duration
-- **Slow**: 0.8-1s duration (2x normal)
+**Winner Celebration Animation**:
+```typescript
+// components/game/winner-announcement.tsx
+import { motion } from 'framer-motion';
 
-**Performance**: Use `will-change` CSS property, `transform` (GPU-accelerated), avoid layout thrashing
+export const WinnerAnnouncement: React.FC<{ winner: Player }> = ({ winner }) => {
+  return (
+    <motion.div
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      transition={{
+        type: 'spring',
+        stiffness: 500,
+        damping: 25
+      }}
+      className="winner-banner"
+    >
+      <motion.h2
+        initial={{ y: 20 }}
+        animate={{ y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        {winner.name} wins!
+      </motion.h2>
+    </motion.div>
+  );
+};
+```
+
+**Animation Orchestration** (Sequential animations):
+```typescript
+// hooks/use-animation.ts
+import { useAnimate } from 'framer-motion';
+
+export const useGameAnimation = () => {
+  const [scope, animate] = useAnimate();
+
+  const playHandSequence = async () => {
+    // 1. Deal cards to each player
+    await animate('.player-card', { opacity: [0, 1] }, { delay: stagger(0.1) });
+
+    // 2. Reveal flop
+    await animate('.flop-card', { rotateY: [180, 0] }, { delay: stagger(0.1) });
+
+    // 3. Chips to pot
+    await animate('.chip', { x: [0, 200] }, { duration: 0.3 });
+  };
+
+  return { scope, playHandSequence };
+};
+```
+
+**Animation Settings**:
+- **Off**: `animate={false}` - instant updates, no transitions
+- **Fast**: `duration: 0.2` - 2.5x speed
+- **Normal**: `duration: 0.4-0.5` - default smooth animations
+- **Slow**: `duration: 0.8-1.0` - cinematic feel
+
+**Performance Optimizations**:
+- Framer Motion uses GPU-accelerated transforms
+- `layout` prop for automatic layout animations
+- `layoutId` for shared element transitions
+- `AnimatePresence` for exit animations
+- `useReducedMotion` hook respects OS accessibility settings
 
 ---
 
 ### 0.6 Testing Strategy
 
-**Unit Tests** (game logic):
+**Unit Tests** (Vitest - game logic):
 - Hand evaluation: 200+ test cases (all hand types, tie-breaking, kickers)
 - Pot calculation: 50+ side pot scenarios (2-9 players, various all-in amounts)
 - Betting rules: Min raise validation, all-in edge cases
@@ -640,33 +729,88 @@ const CommunityCards: React.FC = () => {
 - Multiple all-ins: Correct side pot creation and distribution
 - Tie scenarios: Split pots, odd chip distribution
 
-**Component Tests** (UI):
+**Component Tests** (React Testing Library):
 - Action buttons: Click handlers, disabled states
 - Raise slider: Min/max validation, quick-bet buttons
 - Timer: Countdown, auto-action on expiration
 
+**E2E Tests** (Playwright):
+- Complete game flow: Start game → play hands → win/lose
+- Settings changes: Modify settings, verify applied
+- Keyboard shortcuts: Test all keyboard controls
+- Cross-browser: Chrome, Firefox, Safari
+
 **Test Framework Setup**:
 ```typescript
-// jest.config.js
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom', // For React components
-  coverageThreshold: {
-    global: {
-      statements: 80,
-      branches: 75,
-      functions: 80,
-      lines: 80
-    }
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80,
+      },
+      include: [
+        'lib/game-logic/**/*.ts',
+        'lib/bot-ai/**/*.ts',
+        'components/**/*.tsx',
+      ],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+      ],
+    },
   },
-  collectCoverageFrom: [
-    'src/game-logic/**/*.ts',
-    'src/bot-ai/**/*.ts',
-    'src/presentation/components/**/*.tsx',
-    '!**/*.test.ts',
-    '!**/*.test.tsx'
-  ]
-};
+});
+```
+
+```typescript
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './__tests__/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+});
 ```
 
 **TDD Workflow**:
@@ -679,58 +823,75 @@ module.exports = {
 ## Phase 1: Foundation & Setup (Week 1)
 
 ### Goals
-- Project initialized with all dependencies
-- Build system working (Vite + TypeScript + React)
-- Test infrastructure ready (Jest + React Testing Library)
+- Project initialized with Next.js 15 and all dependencies
+- Build system working (Next.js + TypeScript + React)
+- Test infrastructure ready (Vitest + Playwright)
+- shadcn/ui components installed
 - Basic project structure created
 - Linting and formatting configured
 - Development environment verified
 
 ### Deliverables
 1. **Project Initialization**
-   - Run `npm create vite@latest standalone-poker-game -- --template react-ts`
-   - Install dependencies: `react`, `react-dom`, `typescript`, `vite`
+   - Run `npx create-next-app@latest texas-poker-game --typescript --tailwind --app --src-dir=false`
+   - Configure Next.js for static export in next.config.js
    - Install Zustand: `npm install zustand`
-   - Install Tailwind: `npm install -D tailwindcss postcss autoprefixer`
+   - Install Framer Motion: `npm install framer-motion`
    - Install Lucide React: `npm install lucide-react`
-   - Install pokersolver: `npm install pokersolver`
-   - Install TypeScript types: `npm install --save-dev @types/pokersolver`
+   - Install pokersolver: `npm install pokersolver @types/pokersolver`
    - Install i18next: `npm install react-i18next i18next`
+   - Install Zod: `npm install zod`
+   - Install shadcn/ui: `npx shadcn-ui@latest init`
+   - Install utilities: `npm install clsx tailwind-merge class-variance-authority`
 
-2. **Test Infrastructure**
-   - Install Jest: `npm install -D jest ts-jest @types/jest`
-   - Install React Testing Library: `npm install -D @testing-library/react @testing-library/jest-dom @testing-library/user-event`
-   - Configure jest.config.js with coverage thresholds
+2. **shadcn/ui Components**
+   - Install Button: `npx shadcn-ui@latest add button`
+   - Install Dialog: `npx shadcn-ui@latest add dialog`
+   - Install Slider: `npx shadcn-ui@latest add slider`
+   - Install Tooltip: `npx shadcn-ui@latest add tooltip`
+   - Install Toast: `npx shadcn-ui@latest add toast`
+   - Install Card: `npx shadcn-ui@latest add card`
+   - Install Tabs: `npx shadcn-ui@latest add tabs`
+
+3. **Test Infrastructure**
+   - Install Vitest: `npm install -D vitest @vitest/ui`
+   - Install Testing Library: `npm install -D @testing-library/react @testing-library/jest-dom @testing-library/user-event`
+   - Install Playwright: `npm install -D @playwright/test`
+   - Configure vitest.config.ts with coverage thresholds
+   - Configure playwright.config.ts for E2E tests
    - Create test utilities (setup file, custom matchers)
 
-3. **Build Configuration**
-   - Configure vite.config.ts (plugins, build options, code-splitting)
-   - Configure tsconfig.json (strict mode, paths, exclude)
-   - Configure Tailwind CSS (tailwind.config.js, global styles)
+4. **Build Configuration**
+   - Configure next.config.js (static export, image optimization)
+   - Configure tsconfig.json (strict mode, paths, Next.js settings)
+   - Configure Tailwind CSS (tailwind.config.ts, extend theme)
+   - Add custom fonts (Google Fonts via next/font)
 
-4. **Code Quality Tools**
-   - Install ESLint: `npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser`
-   - Install Prettier: `npm install -D prettier eslint-config-prettier`
-   - Configure .eslintrc.js (TypeScript rules, React rules)
-   - Configure .prettierrc (formatting rules)
-   - Add pre-commit hooks (Husky + lint-staged)
+5. **Code Quality Tools**
+   - ESLint comes with Next.js (extend with stricter rules)
+   - Install Prettier: `npm install -D prettier prettier-plugin-tailwindcss`
+   - Configure .prettierrc (formatting rules, Tailwind sorting)
+   - Add pre-commit hooks: `npm install -D husky lint-staged`
 
-5. **Project Structure**
-   - Create folder structure (src/presentation, src/game-logic, src/bot-ai, tests/)
+6. **Project Structure**
+   - Create folder structure (app/, components/, lib/, hooks/, __tests__/)
    - Create placeholder files with TypeScript interfaces
-   - Set up barrel exports (index.ts files)
+   - Set up barrel exports where needed (index.ts files)
+   - Add cn() utility for Tailwind class merging
 
-6. **Documentation**
+7. **Documentation**
    - Write README.md (project overview, setup, scripts)
    - Write ARCHITECTURE.md (high-level design)
    - Write CLAUDE.md (instructions for Claude Code)
+   - Add inline code comments for complex logic
 
-7. **Verification**
-   - Run `npm run dev` - dev server starts successfully
-   - Run `npm run build` - production build succeeds
-   - Run `npm test` - test suite runs (even if empty)
+8. **Verification**
+   - Run `npm run dev` - Next.js dev server starts successfully
+   - Run `npm run build` - static export succeeds
+   - Run `npm test` - Vitest test suite runs (even if empty)
+   - Run `npm run test:e2e` - Playwright E2E suite runs
    - Run `npm run lint` - no linting errors
-   - Verify hot module replacement (edit component, see instant update)
+   - Verify Fast Refresh (edit component, see instant update)
 
 **Acceptance Criteria**:
 - [x] Project builds without errors in both dev and production modes
@@ -1270,7 +1431,7 @@ module.exports = {
 
 ---
 
-**Plan Version**: 1.4 (Final - pokersolver confirmed)
-**Last Updated**: 2025-11-18
+**Plan Version**: 2.0 (Modern Stack 2025 - Next.js 15 + Framer Motion + Vitest)
+**Last Updated**: 2025-11-17
 **Status**: Ready for implementation
-**Hand Evaluator**: pokersolver - Battle-tested (2,700+ weekly downloads, 1,100+ repos), proven reliability, TypeScript support
+**Tech Stack**: Next.js 15, TypeScript 5, Zustand, Tailwind + shadcn/ui, Framer Motion, Vitest + Playwright, pokersolver
