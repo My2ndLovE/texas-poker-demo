@@ -4,17 +4,27 @@ import { Player, createPlayer } from '../game-logic/models/Player';
 import { GameState } from '../game-logic/models/GameState';
 import { BotPlayer, BotDifficulty } from '../bot-ai/BotPlayer';
 
+export interface GameStatistics {
+  handsPlayed: number;
+  handsWon: number;
+  biggestPotWon: number;
+  totalWinnings: number;
+  startingChips: number;
+}
+
 interface GameStore {
   engine: GameEngine | null;
   gameState: GameState | null;
   botPlayers: Map<string, BotPlayer>;
   isProcessingBots: boolean;
+  statistics: GameStatistics;
 
   // Actions
-  initializeGame: (numBots: number, startingChips: number, smallBlind: number, bigBlind: number, botDifficulty: BotDifficulty) => void;
+  initializeGame: (playerName: string, numBots: number, startingChips: number, smallBlind: number, bigBlind: number, botDifficulty: BotDifficulty) => void;
   startNewHand: () => void;
   playerAction: (action: 'fold' | 'check' | 'call' | 'raise', amount?: number) => void;
   processBotActions: () => void;
+  dismissShowdown: () => void;
   resetGame: () => void;
 }
 
@@ -23,10 +33,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gameState: null,
   botPlayers: new Map(),
   isProcessingBots: false,
+  statistics: {
+    handsPlayed: 0,
+    handsWon: 0,
+    biggestPotWon: 0,
+    totalWinnings: 0,
+    startingChips: 0,
+  },
 
-  initializeGame: (numBots, startingChips, smallBlind, bigBlind, botDifficulty) => {
+  initializeGame: (playerName, numBots, startingChips, smallBlind, bigBlind, botDifficulty) => {
     // Create human player
-    const humanPlayer = createPlayer('human', 'You', startingChips, 0, false);
+    const humanPlayer = createPlayer('human', playerName || 'You', startingChips, 0, false);
 
     // Create bot players
     const botPlayers = new Map<string, BotPlayer>();
@@ -51,6 +68,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       gameState: engine.getState(),
       botPlayers,
       isProcessingBots: false,
+      statistics: {
+        handsPlayed: 0,
+        handsWon: 0,
+        biggestPotWon: 0,
+        totalWinnings: 0,
+        startingChips,
+      },
     });
 
     // Process bot actions if it's a bot's turn
@@ -58,8 +82,30 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   startNewHand: () => {
-    const { engine } = get();
+    const { engine, statistics } = get();
     if (!engine) return;
+
+    // Track statistics before starting new hand
+    const currentState = engine.getState();
+    if (currentState.showdownResult) {
+      const humanPlayer = currentState.players.find((p) => !p.isBot);
+      if (humanPlayer) {
+        const wonThisHand = currentState.showdownResult.winners.some((w) => w.playerId === 'human');
+        const potWon = wonThisHand
+          ? currentState.showdownResult.winners.find((w) => w.playerId === 'human')?.amount || 0
+          : 0;
+
+        set({
+          statistics: {
+            ...statistics,
+            handsPlayed: statistics.handsPlayed + 1,
+            handsWon: wonThisHand ? statistics.handsWon + 1 : statistics.handsWon,
+            biggestPotWon: Math.max(statistics.biggestPotWon, potWon),
+            totalWinnings: statistics.totalWinnings + potWon,
+          },
+        });
+      }
+    }
 
     engine.startNewHand();
     set({ gameState: engine.getState(), isProcessingBots: false });
@@ -137,12 +183,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
     processSingleBotAction();
   },
 
+  dismissShowdown: () => {
+    const { engine } = get();
+    if (!engine) return;
+
+    // Clear showdown result and start new hand if game isn't over
+    if (!engine.isGameOver()) {
+      get().startNewHand();
+    }
+  },
+
   resetGame: () => {
     set({
       engine: null,
       gameState: null,
       botPlayers: new Map(),
       isProcessingBots: false,
+      statistics: {
+        handsPlayed: 0,
+        handsWon: 0,
+        biggestPotWon: 0,
+        totalWinnings: 0,
+        startingChips: 0,
+      },
     });
   },
 }));
