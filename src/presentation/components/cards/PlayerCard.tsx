@@ -8,19 +8,25 @@ interface PlayerCardProps {
 }
 
 export default function PlayerCard({ player, isCurrentPlayer, isDealer, showCards }: PlayerCardProps) {
+  // Validate player object
+  if (!player || !player.name) {
+    console.error('Invalid player object:', player);
+    return null;
+  }
+
   const statusColor = {
     active: 'bg-green-500',
     folded: 'bg-gray-500',
     'all-in': 'bg-yellow-500',
     eliminated: 'bg-red-500',
-  }[player.status];
+  }[player.status] || 'bg-gray-500'; // Fallback for unexpected status
 
   const statusGlow = {
     active: 'shadow-green-500/50',
     folded: 'shadow-gray-500/50',
     'all-in': 'shadow-yellow-500/50 animate-pulse',
     eliminated: 'shadow-red-500/50',
-  }[player.status];
+  }[player.status] || 'shadow-gray-500/50'; // Fallback for unexpected status
 
   return (
     <div className={`relative transition-all duration-300 ${isCurrentPlayer ? 'ring-4 ring-yellow-400 ring-opacity-100 animate-pulse' : ''}`}>
@@ -76,23 +82,30 @@ export default function PlayerCard({ player, isCurrentPlayer, isDealer, showCard
         </div>
 
         {/* Cards */}
-        {player.holeCards.length > 0 && (
+        {player.holeCards && player.holeCards.length > 0 && (
           <div className="flex gap-1">
             {showCards ? (
-              player.holeCards.map((card, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-md px-2 py-2 text-sm font-bold shadow-md transform hover:scale-110 transition-transform"
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs">{card.rank}</span>
-                    <span className={`text-base ${card.suit === 'h' || card.suit === 'd' ? 'text-red-600' : 'text-black'}`}>
-                      {getSuitSymbol(card.suit)}
-                    </span>
+              player.holeCards.map((card, i) => {
+                // Validate card before rendering
+                if (!card || !card.rank || !card.suit) {
+                  console.error('Invalid card in player hole cards:', card);
+                  return null;
+                }
+                return (
+                  <div
+                    key={i}
+                    className="bg-white rounded-md px-2 py-2 text-sm font-bold shadow-md transform hover:scale-110 transition-transform"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs">{card.rank}</span>
+                      <span className={`text-base ${card.suit === 'h' || card.suit === 'd' ? 'text-red-600' : 'text-black'}`}>
+                        {getSuitSymbol(card.suit)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : player.status !== 'folded' ? (
               <>
                 <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-md px-2 py-2 text-xs text-white shadow-md border border-blue-500">

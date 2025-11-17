@@ -19,6 +19,12 @@ export default function CommunityCards({ cards, pot }: CommunityCardsProps) {
       {/* Community Cards */}
       <div className="flex gap-3 bg-gradient-to-br from-gray-800 to-gray-900 p-4 rounded-2xl shadow-2xl border-2 border-gray-700">
         {cards.map((card, i) => {
+          // Validate card exists and has required properties
+          if (!card || !card.rank || !card.suit) {
+            console.error('Invalid card at index', i, card);
+            return null;
+          }
+
           // Highlight flop, turn, river differently
           const isFlop = i < 3;
           const isTurn = i === 3;

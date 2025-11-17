@@ -36,15 +36,47 @@ export default function SettingsMenu({ onStart }: SettingsMenuProps) {
   };
 
   const handleStart = () => {
+    // Validate all inputs before starting
+    const trimmedName = playerName.trim();
+    if (!trimmedName) return;
+
+    // Ensure blinds are valid positive integers
+    const validSmallBlind = Math.max(1, Math.floor(Math.abs(smallBlind)));
+    const validBigBlind = Math.max(validSmallBlind + 1, Math.floor(Math.abs(bigBlind)));
+
+    // Ensure starting chips is enough for at least a few hands
+    const validStartingChips = Math.max(validBigBlind * 10, Math.floor(Math.abs(startingChips)));
+
     onStart({
-      playerName,
-      numBots,
-      startingChips,
-      smallBlind,
-      bigBlind,
+      playerName: trimmedName,
+      numBots: Math.max(1, Math.min(9, numBots)),
+      startingChips: validStartingChips,
+      smallBlind: validSmallBlind,
+      bigBlind: validBigBlind,
       botDifficulty,
     });
   };
+
+  const handleBlindChange = (value: string, isBigBlind: boolean) => {
+    const parsed = parseInt(value, 10);
+    const validValue = isNaN(parsed) ? 1 : Math.max(1, Math.abs(parsed));
+
+    if (isBigBlind) {
+      setBigBlind(validValue);
+    } else {
+      setSmallBlind(validValue);
+      // Auto-adjust big blind if it becomes invalid
+      if (bigBlind <= validValue) {
+        setBigBlind(validValue + 1);
+      }
+    }
+  };
+
+  // Validation checks
+  const isValidName = playerName.trim().length > 0;
+  const isValidBlinds = !isNaN(smallBlind) && !isNaN(bigBlind) && bigBlind > smallBlind && smallBlind > 0;
+  const isValidChips = !isNaN(startingChips) && startingChips >= bigBlind * 10;
+  const canStart = isValidName && isValidBlinds && isValidChips;
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-poker-green-dark via-poker-green to-poker-green-dark flex items-center justify-center z-50 p-4">
@@ -144,8 +176,9 @@ export default function SettingsMenu({ onStart }: SettingsMenuProps) {
                 <input
                   type="number"
                   value={smallBlind}
-                  onChange={(e) => setSmallBlind(Number(e.target.value))}
+                  onChange={(e) => handleBlindChange(e.target.value, false)}
                   min={1}
+                  step="1"
                   className="w-full bg-gray-700 text-white px-3 py-3 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-center"
                   placeholder="SB"
                 />
@@ -156,8 +189,9 @@ export default function SettingsMenu({ onStart }: SettingsMenuProps) {
                 <input
                   type="number"
                   value={bigBlind}
-                  onChange={(e) => setBigBlind(Number(e.target.value))}
-                  min={smallBlind}
+                  onChange={(e) => handleBlindChange(e.target.value, true)}
+                  min={smallBlind + 1}
+                  step="1"
                   className="w-full bg-gray-700 text-white px-3 py-3 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none text-center"
                   placeholder="BB"
                 />
@@ -207,14 +241,31 @@ export default function SettingsMenu({ onStart }: SettingsMenuProps) {
         {/* Start Button */}
         <button
           onClick={handleStart}
-          disabled={!playerName.trim() || bigBlind <= smallBlind}
+          disabled={!canStart}
           className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-8 rounded-lg transition-all shadow-lg hover:shadow-xl active:scale-95 text-lg"
+          title={!canStart ? 'Please fix validation errors before starting' : 'Start the game'}
         >
           🎮 Start Game
         </button>
 
+        {/* Validation Messages */}
+        <div className="mt-4 text-center space-y-1">
+          {!isValidName && (
+            <p className="text-red-400 text-xs">⚠️ Please enter your name</p>
+          )}
+          {!isValidBlinds && (
+            <p className="text-red-400 text-xs">⚠️ Big blind must be greater than small blind (both positive)</p>
+          )}
+          {!isValidChips && (
+            <p className="text-red-400 text-xs">⚠️ Starting chips must be at least 10x the big blind</p>
+          )}
+          {canStart && (
+            <p className="text-green-400 text-xs">✅ Ready to play!</p>
+          )}
+        </div>
+
         {/* Tips */}
-        <div className="mt-6 text-center text-gray-400 text-xs">
+        <div className="mt-2 text-center text-gray-400 text-xs">
           <p>💡 Tip: Big blind should be at least 2x the small blind</p>
         </div>
       </div>

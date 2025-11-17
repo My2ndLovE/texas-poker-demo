@@ -5,24 +5,46 @@ import { HandResult } from '../models/Hand';
 
 export class HandEvaluator {
   evaluateHand(cards: Card[]): HandResult {
+    // Validate input
+    if (!cards || !Array.isArray(cards)) {
+      throw new Error('Cards must be a valid array');
+    }
+
     if (cards.length < 5) {
       throw new Error('Need at least 5 cards to evaluate a hand');
     }
 
-    const cardStrings = cards.map(cardToString);
-    const hand = Hand.solve(cardStrings);
-    const bestCards = hand.cardPool || hand.cards;
+    // Validate each card has required properties
+    for (const card of cards) {
+      if (!card || !card.rank || !card.suit) {
+        throw new Error(`Invalid card in hand: ${JSON.stringify(card)}`);
+      }
+    }
 
-    return {
-      rank: this.mapHandTypeToRank(hand.rank),
-      name: hand.name,
-      description: hand.descr,
-      cards: bestCards.slice(0, 5).map((c: any) => ({
-        rank: c.value === '10' ? 'T' : c.value.toUpperCase(),
-        suit: c.suit.charAt(0).toLowerCase(),
-      })),
-      value: hand.rank,
-    };
+    try {
+      const cardStrings = cards.map(cardToString);
+      const hand = Hand.solve(cardStrings);
+
+      if (!hand || !hand.name || !hand.descr) {
+        throw new Error('Pokersolver returned invalid hand result');
+      }
+
+      const bestCards = hand.cardPool || hand.cards;
+
+      return {
+        rank: this.mapHandTypeToRank(hand.rank),
+        name: hand.name,
+        description: hand.descr,
+        cards: bestCards.slice(0, 5).map((c: any) => ({
+          rank: c.value === '10' ? 'T' : c.value.toUpperCase(),
+          suit: c.suit.charAt(0).toLowerCase(),
+        })),
+        value: hand.rank,
+      };
+    } catch (error) {
+      console.error('Error evaluating hand:', error);
+      throw new Error(`Failed to evaluate hand: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   compareHands(hand1Cards: Card[], hand2Cards: Card[]): number {
@@ -42,22 +64,44 @@ export class HandEvaluator {
   }
 
   determineWinners(handsWithPlayers: Array<{ playerId: string; cards: Card[] }>): string[] {
+    // Validate input
+    if (!handsWithPlayers || !Array.isArray(handsWithPlayers)) {
+      console.error('Invalid handsWithPlayers input');
+      return [];
+    }
+
     if (handsWithPlayers.length === 0) return [];
     if (handsWithPlayers.length === 1) return [handsWithPlayers[0].playerId];
 
-    const hands = handsWithPlayers.map((h) => ({
-      hand: Hand.solve(h.cards.map(cardToString)),
-      playerId: h.playerId,
-    }));
+    try {
+      const hands = handsWithPlayers.map((h) => {
+        if (!h || !h.playerId || !h.cards || !Array.isArray(h.cards)) {
+          throw new Error(`Invalid hand data for player: ${h?.playerId || 'unknown'}`);
+        }
+        return {
+          hand: Hand.solve(h.cards.map(cardToString)),
+          playerId: h.playerId,
+        };
+      });
 
-    const pokersolverHands = hands.map((h) => h.hand);
-    const winners = Hand.winners(pokersolverHands);
+      const pokersolverHands = hands.map((h) => h.hand);
+      const winners = Hand.winners(pokersolverHands);
 
-    const winnerPlayerIds = hands
-      .filter((h) => winners.includes(h.hand))
-      .map((h) => h.playerId);
+      if (!winners || !Array.isArray(winners)) {
+        console.error('Pokersolver winners() returned invalid result');
+        return [handsWithPlayers[0].playerId]; // Fallback to first player
+      }
 
-    return winnerPlayerIds;
+      const winnerPlayerIds = hands
+        .filter((h) => winners.includes(h.hand))
+        .map((h) => h.playerId);
+
+      return winnerPlayerIds.length > 0 ? winnerPlayerIds : [handsWithPlayers[0].playerId];
+    } catch (error) {
+      console.error('Error determining winners:', error);
+      // Fallback: return first player as winner
+      return [handsWithPlayers[0].playerId];
+    }
   }
 
   private mapHandTypeToRank(handRank: number): number {

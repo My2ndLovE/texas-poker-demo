@@ -339,21 +339,23 @@ export class GameEngine {
     );
 
     // Distribute main pot
-    const mainPotShare = Math.floor(potStructure.mainPot.amount / mainPotWinners.length);
-    mainPotWinners.forEach((winnerId) => {
-      const winner = this.state.players.find((p) => p.id === winnerId);
-      const handInfo = handEvaluations.get(winnerId);
+    if (mainPotWinners.length > 0) {
+      const mainPotShare = Math.floor(potStructure.mainPot.amount / mainPotWinners.length);
+      mainPotWinners.forEach((winnerId) => {
+        const winner = this.state.players.find((p) => p.id === winnerId);
+        const handInfo = handEvaluations.get(winnerId);
 
-      if (winner) {
-        winner.chips += mainPotShare;
-        allWinners.push({
-          playerId: winnerId,
-          handName: handInfo?.name || 'Unknown',
-          handDescription: handInfo?.description || '',
-          amount: mainPotShare,
-        });
-      }
-    });
+        if (winner) {
+          winner.chips += mainPotShare;
+          allWinners.push({
+            playerId: winnerId,
+            handName: handInfo?.name || 'Unknown',
+            handDescription: handInfo?.description || '',
+            amount: mainPotShare,
+          });
+        }
+      });
+    }
 
     // Distribute side pots
     potStructure.sidePots.forEach((sidePot) => {
@@ -361,6 +363,8 @@ export class GameEngine {
       if (eligibleHands.length === 0) return;
 
       const sidePotWinners = this.handEvaluator.determineWinners(eligibleHands);
+      if (sidePotWinners.length === 0) return; // Prevent division by zero
+
       const sidePotShare = Math.floor(sidePot.amount / sidePotWinners.length);
 
       sidePotWinners.forEach((winnerId) => {

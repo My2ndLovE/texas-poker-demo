@@ -18,26 +18,46 @@ export default function ActionButtons() {
     );
   }
 
-  const callAmount = gameState.currentBet - humanPlayer.currentBet;
+  // Edge case: Human player is eliminated but still in players array
+  if (humanPlayer.status === 'eliminated' || humanPlayer.chips === 0) {
+    return (
+      <div className="container mx-auto text-center text-white">
+        <p>You have been eliminated from the game.</p>
+      </div>
+    );
+  }
+
+  const callAmount = Math.max(0, gameState.currentBet - humanPlayer.currentBet);
   const canCheck = callAmount === 0;
   const minRaise = gameState.currentBet + gameState.bigBlind; // Minimum raise is current bet + big blind
   const maxBet = humanPlayer.chips + humanPlayer.currentBet;
 
-  // Betting presets
+  // Betting presets - ensure they meet minimum raise requirement
   const halfPot = Math.max(minRaise, Math.floor(gameState.pot / 2));
   const fullPot = Math.max(minRaise, gameState.pot);
   const twoPot = Math.max(minRaise, gameState.pot * 2);
 
   const handleRaise = () => {
-    if (raiseAmount >= minRaise && raiseAmount <= maxBet) {
-      playerAction('raise', raiseAmount);
+    // Validate: must be a valid number, meet minimum, not exceed maximum
+    if (!isNaN(raiseAmount) && raiseAmount >= minRaise && raiseAmount <= maxBet) {
+      playerAction('raise', Math.floor(raiseAmount)); // Floor to avoid decimal chips
       setRaiseAmount(0);
     }
   };
 
   const handlePresetBet = (amount: number) => {
-    const actualAmount = Math.min(amount, maxBet);
-    playerAction('raise', actualAmount);
+    // Clamp to maxBet and ensure it meets minimum raise
+    const actualAmount = Math.min(Math.max(amount, minRaise), maxBet);
+    // Only proceed if we can actually raise (have enough chips)
+    if (actualAmount >= minRaise) {
+      playerAction('raise', actualAmount);
+    }
+  };
+
+  const handleInputChange = (value: string) => {
+    const parsed = parseFloat(value);
+    // Allow empty string, set to 0; otherwise use parsed value if valid
+    setRaiseAmount(value === '' ? 0 : isNaN(parsed) ? raiseAmount : Math.max(0, parsed));
   };
 
   return (
@@ -95,10 +115,11 @@ export default function ActionButtons() {
           <input
             type="number"
             value={raiseAmount || ''}
-            onChange={(e) => setRaiseAmount(Number(e.target.value))}
+            onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleRaise()}
             min={minRaise}
             max={maxBet}
+            step="1"
             className="bg-gray-800 text-white px-4 py-4 rounded-lg w-full sm:w-36 text-center font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[56px]"
             placeholder={`Min $${minRaise}`}
             aria-label={`Raise amount, minimum ${minRaise}, maximum ${maxBet}`}

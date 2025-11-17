@@ -18,7 +18,20 @@ export default function HandStrength({ holeCards, communityCards, phase }: HandS
   }
 
   const allCards = [...holeCards, ...communityCards];
-  const handResult = handEvaluator.evaluateHand(allCards);
+
+  // Evaluate hand with error handling
+  let handResult;
+  try {
+    handResult = handEvaluator.evaluateHand(allCards);
+    // Validate handResult has required properties
+    if (!handResult || typeof handResult.rank !== 'number' || !handResult.name || !handResult.description) {
+      console.error('Invalid hand result from evaluator:', handResult);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error evaluating hand:', error);
+    return null;
+  }
 
   // Get strength color based on hand rank
   const getStrengthColor = (rank: number): string => {

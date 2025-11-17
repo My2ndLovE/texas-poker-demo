@@ -82,51 +82,73 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   startNewHand: () => {
-    const { engine, statistics } = get();
-    if (!engine) return;
+    try {
+      const { engine, statistics } = get();
+      if (!engine) return;
 
-    // Track statistics before starting new hand
-    const currentState = engine.getState();
-    if (currentState.showdownResult) {
-      const humanPlayer = currentState.players.find((p) => !p.isBot);
-      if (humanPlayer) {
-        const wonThisHand = currentState.showdownResult.winners.some((w) => w.playerId === 'human');
-        const potWon = wonThisHand
-          ? currentState.showdownResult.winners.find((w) => w.playerId === 'human')?.amount || 0
-          : 0;
+      // Track statistics before starting new hand
+      const currentState = engine.getState();
+      if (currentState?.showdownResult && currentState.showdownResult.winners) {
+        const humanPlayer = currentState.players.find((p) => !p.isBot);
+        if (humanPlayer) {
+          const wonThisHand = currentState.showdownResult.winners.some((w) => w?.playerId === 'human');
+          const potWon = wonThisHand
+            ? currentState.showdownResult.winners.find((w) => w?.playerId === 'human')?.amount || 0
+            : 0;
 
-        set({
-          statistics: {
-            ...statistics,
-            handsPlayed: statistics.handsPlayed + 1,
-            handsWon: wonThisHand ? statistics.handsWon + 1 : statistics.handsWon,
-            biggestPotWon: Math.max(statistics.biggestPotWon, potWon),
-            totalWinnings: statistics.totalWinnings + potWon,
-          },
-        });
+          // Ensure statistics values are valid numbers
+          set({
+            statistics: {
+              ...statistics,
+              handsPlayed: Math.max(0, statistics.handsPlayed + 1),
+              handsWon: wonThisHand ? Math.max(0, statistics.handsWon + 1) : statistics.handsWon,
+              biggestPotWon: Math.max(0, statistics.biggestPotWon, potWon),
+              totalWinnings: Math.max(0, statistics.totalWinnings + potWon),
+            },
+          });
+        }
       }
+
+      engine.startNewHand();
+      const newState = engine.getState();
+      if (newState) {
+        set({ gameState: newState, isProcessingBots: false });
+      }
+
+      // Process bot actions if needed
+      setTimeout(() => get().processBotActions(), 1000);
+    } catch (error) {
+      console.error('Error in startNewHand:', error);
+      set({ isProcessingBots: false });
     }
-
-    engine.startNewHand();
-    set({ gameState: engine.getState(), isProcessingBots: false });
-
-    // Process bot actions if needed
-    setTimeout(() => get().processBotActions(), 1000);
   },
 
   playerAction: (action, amount) => {
-    const { engine, isProcessingBots } = get();
-    if (!engine || isProcessingBots) return;
+    try {
+      const { engine, isProcessingBots } = get();
+      if (!engine || isProcessingBots) return;
 
-    const currentPlayer = engine.getCurrentPlayer();
-    if (!currentPlayer || currentPlayer.isBot) return;
+      const currentPlayer = engine.getCurrentPlayer();
+      if (!currentPlayer || currentPlayer.isBot) return;
 
-    const success = engine.playerAction(currentPlayer.id, action, amount);
-    if (success) {
-      set({ gameState: engine.getState() });
+      // Validate action and amount
+      if (!action || (action === 'raise' && (!amount || amount < 0 || !isFinite(amount)))) {
+        console.warn('Invalid action or amount:', action, amount);
+        return;
+      }
 
-      // Process bot actions after human action
-      setTimeout(() => get().processBotActions(), 800);
+      const success = engine.playerAction(currentPlayer.id, action, amount);
+      if (success) {
+        const newState = engine.getState();
+        if (newState) {
+          set({ gameState: newState });
+        }
+
+        // Process bot actions after human action
+        setTimeout(() => get().processBotActions(), 800);
+      }
+    } catch (error) {
+      console.error('Error in playerAction:', error);
     }
   },
 
