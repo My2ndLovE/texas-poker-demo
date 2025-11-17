@@ -613,10 +613,34 @@ export const pokerMachine = createMachine(
     // Guards
     // ========================================================================
     guards: {
-      bettingRoundComplete: () => {
-        // TODO: Implement betting round completion check
-        // Check if all active players have acted and bets are equal
-        return true; // Placeholder
+      bettingRoundComplete: ({ context }) => {
+        // Filter active players (not folded, not all-in)
+        const activePlayers = context.players.filter((p) => !p.isFolded && !p.isAllIn);
+
+        // If only one or no active players, round is complete
+        if (activePlayers.length <= 1) {
+          return true;
+        }
+
+        // Check if there are any actions in history for current phase
+        const currentPhaseActions = context.actionHistory.filter(() => {
+          // Simple check: if we have any actions, assume they're for current phase
+          // In a more sophisticated implementation, we'd track phase with each action
+          return true;
+        });
+
+        // Need at least one action per active player
+        if (currentPhaseActions.length < activePlayers.length) {
+          return false;
+        }
+
+        // Check if all active players have equal bets
+        const activeBets = activePlayers.map((p) => p.currentBet);
+        const maxBet = Math.max(...activeBets);
+
+        const allBetsEqual = activePlayers.every((p) => p.currentBet === maxBet);
+
+        return allBetsEqual;
       },
 
       moreThanOnePlayerRemaining: ({ context }) => {
