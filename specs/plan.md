@@ -50,12 +50,13 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 - **Integration Tests**: Full game flows (complete hands, multiple scenarios)
 - **Coverage**: Target 80% for game logic, 60% for UI
 
-**Hand Evaluation Library**: pokersolver (https://github.com/goldfire/pokersolver)
-- **Why**: Battle-tested with 2,700+ weekly downloads, used by 1,100+ repos, stable and reliable
-- **Features**: 5-7 card evaluation, hand ranking, comparison, supports multiple game types
-- **Integration**: Simple synchronous API, TypeScript types available via @types/pokersolver
-- **Performance**: Fast enough for 200+ concurrent players, no async initialization needed
-- **Adoption**: 414 GitHub stars, mature codebase, zero runtime dependencies
+**Hand Evaluation Library**: poker-evaluator (https://github.com/Sukhmai/poker-evaluator)
+- **Why**: Actively maintained (last update Aug 2025), native TypeScript support (89.5%)
+- **Features**: 3, 5, 6, 7 card evaluation using Two Plus Two algorithm with lookup tables
+- **Integration**: Native TypeScript API, no @types needed, modern ES6+ codebase
+- **Performance**: 22 million hands/second (2,000x more than needed for 200+ players)
+- **Maintenance**: Fork of original poker-evaluator, actively maintained with 2024-2025 updates
+- **Bundle Size**: Efficient lookup table approach, includes HandRanks.dat
 
 **Icons**: Lucide React
 - **Why**: Professional, tree-shakeable, 1000+ icons
@@ -131,7 +132,7 @@ standalone-poker-game/
 │   │   │   ├── PositionRules.ts       # Dealer, SB, BB, UTG calculations
 │   │   │   └── ShowdownRules.ts       # Card reveal order, mucking rules
 │   │   ├── evaluation/
-│   │   │   ├── HandEvaluator.ts       # Wrapper for pokersolver library
+│   │   │   ├── HandEvaluator.ts       # Wrapper for poker-evaluator library
 │   │   │   ├── HandComparator.ts      # Compare two hands (with tie-breaking)
 │   │   │   └── BestHandFinder.ts      # Find best 5-card hand from 7 cards
 │   │   ├── pot/
@@ -271,75 +272,86 @@ standalone-poker-game/
 
 ### 0.1 Hand Evaluation Library Selection
 
-**Decision**: Use **pokersolver** (https://github.com/goldfire/pokersolver)
+**Decision**: Use **poker-evaluator** by Sukhmai (https://github.com/Sukhmai/poker-evaluator)
 
 **Rationale**:
-- Industry standard with 2,700+ weekly downloads (10x more than alternatives)
-- Battle-tested: 414 GitHub stars, used by 1,100+ repositories
-- Mature and stable: Poker hand evaluation is a solved problem, library works perfectly
-- TypeScript support: Official types available via @types/pokersolver
-- Simple synchronous API: No async initialization, no WebAssembly complexity
-- Zero dependencies: Lightweight, pure JavaScript
-- Production-ready: 7+ years of real-world usage validates reliability
-- Perfect performance: More than sufficient for 200+ concurrent players
+- **Actively maintained**: Last commit August 2025 (3 months ago), 3 commits in 2024
+- **Native TypeScript**: 89.5% TypeScript codebase, no need for @types package
+- **Modern fork**: Updated version of the proven Two Plus Two algorithm implementation
+- **Excellent performance**: 22 million hands/second on modern hardware
+- **Proven algorithm**: Two Plus Two with lookup table (battle-tested approach)
+- **Clean API**: Synchronous evaluation, simple integration
+- **Mobile-friendly**: Pure computation, no async overhead
 
 **Integration**:
 ```typescript
 // src/game-logic/evaluation/HandEvaluator.ts
-import { Hand } from 'pokersolver';
+import { evaluateHand, compareHands } from 'poker-evaluator';
 
 export class HandEvaluator {
   evaluateHand(cards: Card[]): HandResult {
-    // Convert Card[] to pokersolver format (e.g., "As", "Kh")
+    // Convert Card[] to poker-evaluator format (e.g., "As", "Kh")
     const cardStrings = cards.map(c => `${c.rank}${c.suit.toLowerCase()}`);
 
     // Evaluate best 5-card hand from 7 cards
-    const hand = Hand.solve(cardStrings);
+    const result = evaluateHand(cardStrings);
 
     return {
-      rank: this.mapRankToEnum(hand.rank),
-      description: hand.descr,
-      cards: hand.cards,
-      value: hand.rank
+      rank: this.mapHandTypeToRank(result.handType),
+      description: result.handName,
+      value: result.value,
+      handRank: result.handRank
     };
   }
 
   compareHands(hand1Cards: Card[], hand2Cards: Card[]): number {
     // Returns: 1 if hand1 wins, -1 if hand2 wins, 0 if tie
-    const h1 = Hand.solve(hand1Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`));
-    const h2 = Hand.solve(hand2Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`));
+    const h1Strings = hand1Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`);
+    const h2Strings = hand2Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`);
 
-    const winners = Hand.winners([h1, h2]);
-    if (winners.length === 2) return 0; // Tie
-    return winners[0] === h1 ? 1 : -1;
+    const h1 = evaluateHand(h1Strings);
+    const h2 = evaluateHand(h2Strings);
+
+    // Lower value = stronger hand in Two Plus Two algorithm
+    if (h1.value < h2.value) return 1;
+    if (h1.value > h2.value) return -1;
+    return 0;
   }
 
-  private mapRankToEnum(rank: number): HandRank {
-    // Map pokersolver rank to internal enum
+  private mapHandTypeToRank(handType: number): HandRank {
+    // poker-evaluator handType: 0-9
     // 0 = High Card, 1 = Pair, ..., 9 = Straight Flush
-    return rank as HandRank;
+    return handType as HandRank;
   }
 }
 ```
 
 **Advantages**:
-- Simple, clean API (no complex encoding/decoding)
-- Synchronous evaluation (no async/await needed)
-- Works identically in browser and Node.js
-- TypeScript types make development easier
-- No bundle bloat (pure JS, tree-shakeable)
-- "Just works" - no surprises, no edge cases
+- **Native TypeScript**: Better IDE support, type safety out of the box
+- **Actively maintained**: Recent updates, bug fixes, modern dependencies
+- **Modern codebase**: ES6+, clean architecture, up-to-date practices
+- **Same proven algorithm**: Two Plus Two lookup table (used in production poker sites)
+- **Synchronous API**: No async/await complexity
+- **Works everywhere**: Browser and Node.js support
 
 **Performance Reality Check**:
-- pokersolver: ~500k-1M hands/second (sufficient for 10,000 concurrent players)
+- poker-evaluator: 22 million hands/second (exceptional)
 - Your use case: ~10,000 evaluations/second max (200 players, peak load)
-- Headroom: 50-100x more performance than needed
-- Conclusion: Speed is not a bottleneck, simplicity and reliability matter more
+- Headroom: 2,200x more performance than needed
+- Conclusion: Performance is NOT a bottleneck, focus on code quality and maintainability
+
+**Why This Over pokersolver**:
+- Native TypeScript vs wrapper types (@types/pokersolver)
+- Actively maintained (2025) vs last update 2021
+- Modern ES6+ codebase vs older JavaScript patterns
+- Same excellent performance for real-world use
+- Better long-term support and bug fixes
 
 **Alternatives Considered**:
-- PokerHandEvaluator (WebAssembly): Rejected due to complexity, overkill performance
-- poker-evaluator: Rejected due to being unmaintained (last update 2017)
-- phe (JS port): Rejected due to low adoption, unmaintained
+- **pokersolver**: Good but lacks native TypeScript, not actively maintained (last update 2021)
+- **PokerHandEvaluator (WebAssembly)**: Overkill performance, unnecessary complexity
+- **Original poker-evaluator (chenosaurus)**: Abandoned since 2017, Sukhmai's fork is the maintained version
+- **phe (JS port)**: Low adoption, unmaintained
 
 ---
 
@@ -682,8 +694,7 @@ module.exports = {
    - Install Zustand: `npm install zustand`
    - Install Tailwind: `npm install -D tailwindcss postcss autoprefixer`
    - Install Lucide React: `npm install lucide-react`
-   - Install pokersolver: `npm install pokersolver`
-   - Install TypeScript types: `npm install --save-dev @types/pokersolver`
+   - Install poker-evaluator: `npm install poker-evaluator` (Sukhmai's actively maintained fork)
    - Install i18next: `npm install react-i18next i18next`
 
 2. **Test Infrastructure**
@@ -751,7 +762,7 @@ module.exports = {
 - [TDD] Shuffle randomness test (Chi-square test for distribution)
 
 **Hand Evaluation**:
-- [TDD] HandEvaluator service (wrapper for pokersolver with clean TypeScript API)
+- [TDD] HandEvaluator service (wrapper for poker-evaluator with native TypeScript support)
 - [TDD] 200+ test cases (all hand types, tie-breaking, kickers)
 - [TDD] HandComparator (compare two hands, return winner)
 - [TDD] Edge cases (wheel straight A-2-3-4-5, suited vs unsuited)
@@ -1174,7 +1185,7 @@ module.exports = {
 - Comprehensive test suite (200+ test cases)
 - Manual verification against official poker rules
 - Playtesting with experienced poker players
-- Reference implementation: pokersolver library (battle-tested, 1,100+ repos, proven correct)
+- Reference implementation: poker-evaluator library (Two Plus Two algorithm, actively maintained, 22M hands/sec)
 
 ### Risk: Poor Bot AI (Too Easy or Too Hard)
 **Impact**: Medium - Reduces replayability and engagement
@@ -1259,7 +1270,7 @@ module.exports = {
 
 ---
 
-**Plan Version**: 1.2 (Updated for pokersolver)
+**Plan Version**: 1.3 (Updated for poker-evaluator by Sukhmai)
 **Last Updated**: 2025-11-18
 **Status**: Ready for implementation
-**Hand Evaluator**: pokersolver - Battle-tested, 2,700+ weekly downloads, TypeScript support
+**Hand Evaluator**: poker-evaluator (Sukhmai) - Native TypeScript, actively maintained (Aug 2025), 22M hands/sec
