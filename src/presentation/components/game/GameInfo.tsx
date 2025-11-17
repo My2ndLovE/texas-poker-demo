@@ -7,13 +7,30 @@ export function GameInfo() {
 
   if (!gameState) return null;
 
+  const phaseDisplay: Record<string, string> = {
+    menu: 'Menu',
+    preflop: 'Pre-Flop',
+    flop: 'Flop',
+    turn: 'Turn',
+    river: 'River',
+    showdown: 'Showdown',
+    'hand-complete': 'Hand Complete',
+    'game-over': 'Game Over',
+  };
+
   return (
     <div className="flex justify-between items-center bg-gray-800/90 p-4 rounded-lg">
       <div>
         <h1 className="text-2xl font-bold text-white">Texas Hold'em Poker</h1>
-        <p className="text-gray-400 text-sm">
-          Blinds: ${gameState.smallBlindAmount}/${gameState.bigBlindAmount}
-        </p>
+        <div className="flex gap-4 text-sm">
+          <p className="text-gray-400">
+            Blinds: ${gameState.smallBlindAmount}/${gameState.bigBlindAmount}
+          </p>
+          <p className="text-yellow-400 font-semibold">
+            Phase: {phaseDisplay[gameState.phase] || gameState.phase}
+          </p>
+          <p className="text-green-400 font-semibold">Pot: ${gameState.pot.totalPot}</p>
+        </div>
       </div>
 
       <div className="flex gap-4">

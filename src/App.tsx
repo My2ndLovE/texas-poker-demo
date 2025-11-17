@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ActionButtons } from './presentation/components/game/ActionButtons';
 import { GameInfo } from './presentation/components/game/GameInfo';
+import { HandRankDisplay } from './presentation/components/game/HandRankDisplay';
 import { PokerTable } from './presentation/components/game/PokerTable';
 import { useGameStore } from './state-management/gameStore';
 import { useSettingsStore } from './state-management/settingsStore';
@@ -47,6 +48,9 @@ function App() {
         <div className="mb-6">
           <PokerTable />
         </div>
+
+        {/* Hand Rank Display */}
+        <HandRankDisplay />
 
         {/* Action Buttons */}
         <ActionButtons />

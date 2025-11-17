@@ -44,6 +44,8 @@ export class GameEngine {
       burnedCards: [],
       actionHistory: [],
       handNumber: 1,
+      lastAggressorIndex: -1,
+      bettingRoundStartIndex: 0,
     };
 
     this.startNewHand();
@@ -94,7 +96,11 @@ export class GameEngine {
     this.dealHoleCards();
 
     // Set first player to act (left of big blind)
-    this.state.currentPlayerIndex = this.getPlayerIndexLeftOf(this.getBigBlindIndex());
+    const firstPlayerIndex = this.getPlayerIndexLeftOf(this.getBigBlindIndex());
+    this.state.currentPlayerIndex = firstPlayerIndex;
+    this.state.bettingRoundStartIndex = firstPlayerIndex;
+    // For preflop, BB is the last aggressor (they posted the big blind)
+    this.state.lastAggressorIndex = this.getBigBlindIndex();
   }
 
   /**
@@ -178,6 +184,10 @@ export class GameEngine {
         const raiseSize = player.currentBet - currentBet;
         this.state.minimumRaise = raiseSize;
 
+        // Mark this player as the last aggressor (everyone must act after them)
+        const playerIndex = this.state.players.findIndex((p) => p.id === player.id);
+        this.state.lastAggressorIndex = playerIndex;
+
         if (player.chips === 0) {
           player.status = 'all-in';
         }
@@ -186,10 +196,17 @@ export class GameEngine {
 
       case 'all-in': {
         const allInAmount = player.chips;
+        const currentBet = bettingRules.getCurrentBet(this.state);
         player.currentBet += allInAmount;
         player.totalBet += allInAmount;
         player.chips = 0;
         player.status = 'all-in';
+
+        // If all-in is more than current bet, player is the aggressor
+        if (player.currentBet > currentBet) {
+          const playerIndex = this.state.players.findIndex((p) => p.id === player.id);
+          this.state.lastAggressorIndex = playerIndex;
+        }
         break;
       }
     }
@@ -252,7 +269,72 @@ export class GameEngine {
 
     // Check if all players have matched the current bet
     const currentBet = bettingRules.getCurrentBet(this.state);
-    return playersWhoCanAct.every((p) => p.currentBet === currentBet);
+    const allBetsEqual = playersWhoCanAct.every((p) => p.currentBet === currentBet);
+
+    if (!allBetsEqual) {
+      return false; // Someone hasn't matched the bet yet
+    }
+
+    // All bets are equal. Now check if everyone has had a chance to act.
+    // The round is complete if we've reached the last aggressor (or gone full circle if no aggressor)
+    const currentPlayerIndex = this.state.currentPlayerIndex;
+
+    // If there was an aggressor (someone bet/raised), action must return to them
+    if (this.state.lastAggressorIndex !== -1) {
+      // Check if the next player to act would be the aggressor or someone past them
+      const nextPlayerIndex = this.getNextActivePlayerIndex(currentPlayerIndex);
+      if (nextPlayerIndex === -1) {
+        return true; // No more active players
+      }
+
+      // If next player is the aggressor and all bets are equal, round is complete
+      // (The aggressor doesn't need to act again if no one raised after them)
+      return nextPlayerIndex === this.state.lastAggressorIndex;
+    }
+
+    // No aggressor (everyone checked). Round complete if we've gone full circle.
+    // Check if the next player to act would be at or past the starting position
+    const nextPlayerIndex = this.getNextActivePlayerIndex(currentPlayerIndex);
+    if (nextPlayerIndex === -1) {
+      return true; // No more active players
+    }
+
+    // If we've wrapped around to or past the start position, everyone has acted
+    return (
+      this.hasWrappedAround(
+        this.state.bettingRoundStartIndex,
+        currentPlayerIndex,
+        nextPlayerIndex,
+      ) || nextPlayerIndex === this.state.bettingRoundStartIndex
+    );
+  }
+
+  /**
+   * Check if we've wrapped around from start through current to next
+   */
+  private hasWrappedAround(start: number, current: number, next: number): boolean {
+    // If next < current, we wrapped around
+    // And if next >= start, we've completed the circle
+    return current >= start && next < current && next >= start;
+  }
+
+  /**
+   * Get the next active player index (or -1 if none)
+   */
+  private getNextActivePlayerIndex(fromIndex: number): number {
+    let nextIndex = (fromIndex + 1) % this.state.players.length;
+    let checked = 0;
+
+    while (checked < this.state.players.length) {
+      const player = this.state.players[nextIndex];
+      if (player.status === 'active') {
+        return nextIndex;
+      }
+      nextIndex = (nextIndex + 1) % this.state.players.length;
+      checked++;
+    }
+
+    return -1; // No active players found
   }
 
   /**
@@ -263,6 +345,9 @@ export class GameEngine {
     this.state.players.forEach((p) => {
       p.currentBet = 0;
     });
+
+    // Reset betting round tracking for new round
+    this.state.lastAggressorIndex = -1;
 
     switch (this.state.phase) {
       case 'preflop':
@@ -290,7 +375,9 @@ export class GameEngine {
     this.deck.burn();
     this.state.communityCards = this.deck.deal(3);
     this.state.phase = 'flop' as GamePhase;
-    this.state.currentPlayerIndex = this.getPlayerIndexLeftOf(this.state.dealerIndex);
+    const firstPlayerIndex = this.getPlayerIndexLeftOf(this.state.dealerIndex);
+    this.state.currentPlayerIndex = firstPlayerIndex;
+    this.state.bettingRoundStartIndex = firstPlayerIndex;
   }
 
   /**
@@ -301,7 +388,9 @@ export class GameEngine {
     const turnCard = this.deck.dealOne();
     this.state.communityCards.push(turnCard);
     this.state.phase = 'turn' as GamePhase;
-    this.state.currentPlayerIndex = this.getPlayerIndexLeftOf(this.state.dealerIndex);
+    const firstPlayerIndex = this.getPlayerIndexLeftOf(this.state.dealerIndex);
+    this.state.currentPlayerIndex = firstPlayerIndex;
+    this.state.bettingRoundStartIndex = firstPlayerIndex;
   }
 
   /**
@@ -312,7 +401,9 @@ export class GameEngine {
     const riverCard = this.deck.dealOne();
     this.state.communityCards.push(riverCard);
     this.state.phase = 'river' as GamePhase;
-    this.state.currentPlayerIndex = this.getPlayerIndexLeftOf(this.state.dealerIndex);
+    const firstPlayerIndex = this.getPlayerIndexLeftOf(this.state.dealerIndex);
+    this.state.currentPlayerIndex = firstPlayerIndex;
+    this.state.bettingRoundStartIndex = firstPlayerIndex;
   }
 
   /**
@@ -494,6 +585,8 @@ export class GameEngine {
       burnedCards: [],
       actionHistory: [],
       handNumber: 0,
+      lastAggressorIndex: -1,
+      bettingRoundStartIndex: 0,
     };
   }
 

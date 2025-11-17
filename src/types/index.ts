@@ -102,6 +102,8 @@ export interface GameState {
   actionHistory: PlayerAction[];
   handNumber: number;
   lastAction?: PlayerAction;
+  lastAggressorIndex: number; // Last player to bet/raise in current round
+  bettingRoundStartIndex: number; // First player to act in current betting round
 }
 
 export interface GameSettings {
