@@ -464,14 +464,24 @@ export const pokerMachine = createMachine(
           }
         }
 
-        // Move to next active player
+        // Move to next active player (prevent infinite loop by tracking cycles)
         let nextPlayerIndex = (context.currentPlayerIndex + 1) % context.players.length;
+        let cycleCount = 0;
+        const maxCycles = context.players.length; // Can't cycle more than total players
+
         while (
+          cycleCount < maxCycles &&
           updatedPlayers[nextPlayerIndex] &&
           (updatedPlayers[nextPlayerIndex]!.isFolded ||
             updatedPlayers[nextPlayerIndex]!.isAllIn)
         ) {
           nextPlayerIndex = (nextPlayerIndex + 1) % context.players.length;
+          cycleCount++;
+        }
+
+        // If we cycled through everyone, keep current index (no active players to act)
+        if (cycleCount >= maxCycles) {
+          nextPlayerIndex = context.currentPlayerIndex;
         }
 
         return {
@@ -590,10 +600,19 @@ export const pokerMachine = createMachine(
         };
       }),
 
-      resetForNextHand: assign(() => {
-        // Reset for next hand
+      resetForNextHand: assign(({ context }) => {
+        // Reset for next hand - clear player state but keep chips
         const deck = shuffleDeck(createDeck());
+        const resetPlayers = context.players.map((player) => ({
+          ...player,
+          holeCards: [],
+          currentBet: 0,
+          isFolded: false,
+          isAllIn: false,
+        }));
+
         return {
+          players: resetPlayers,
           deck,
           communityCards: [],
           burnedCards: [],

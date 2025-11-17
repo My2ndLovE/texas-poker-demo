@@ -179,7 +179,10 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
   useEffect(() => {
     if (currentPlayer && isHumanTurn) {
       const minRaise = callAmount + context.bigBlind;
-      setRaiseAmount(Math.min(minRaise, currentPlayer.chips));
+      // Only set if player can actually raise
+      if (currentPlayer.chips > callAmount + context.bigBlind) {
+        setRaiseAmount(minRaise);
+      }
     }
   }, [currentPlayer, isHumanTurn, callAmount, context.bigBlind]);
 
@@ -588,7 +591,7 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
                   )}
 
                   {/* Raise Button with Slider */}
-                  {currentPlayer.chips > callAmount && (
+                  {currentPlayer.chips > callAmount + context.bigBlind && (
                     <div className="flex flex-col items-center gap-2">
                       <button
                         onClick={() => {
@@ -608,7 +611,7 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
                       </button>
                       <input
                         type="range"
-                        min={Math.min(callAmount + context.bigBlind, currentPlayer.chips)}
+                        min={callAmount + context.bigBlind}
                         max={currentPlayer.chips}
                         step={context.bigBlind}
                         value={raiseAmount}
