@@ -1,4 +1,5 @@
 import { bettingRules } from '@/game-logic/rules/BettingRules';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useGameStore } from '@/state-management/gameStore';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -84,6 +85,19 @@ export function ActionButtons() {
     setShowBetInput(false);
   };
 
+  // Keyboard shortcuts
+  useKeyboardShortcuts(
+    {
+      onFold: () => validActions.includes('fold') && handleAction('fold'),
+      onCheck: () => validActions.includes('check') && handleAction('check'),
+      onCall: () => validActions.includes('call') && handleAction('call', callAmount),
+      onBet: () => validActions.includes('bet') && handleAction('bet'),
+      onRaise: () => validActions.includes('raise') && handleAction('raise'),
+      onAllIn: () => validActions.includes('all-in') && handleAction('all-in', currentPlayer.chips),
+    },
+    !isProcessing && !showBetInput && !showRaiseInput, // Only when not in input mode
+  );
+
   return (
     <motion.div
       className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-800/95 p-6 rounded-2xl shadow-2xl border-2 border-gray-700"
@@ -95,6 +109,7 @@ export function ActionButtons() {
         {/* Fold Button */}
         {validActions.includes('fold') && (
           <button
+            type="button"
             onClick={() => handleAction('fold')}
             disabled={isProcessing}
             className="action-button bg-red-600 hover:bg-red-700 text-white"
@@ -106,6 +121,7 @@ export function ActionButtons() {
         {/* Check Button */}
         {validActions.includes('check') && (
           <button
+            type="button"
             onClick={() => handleAction('check')}
             disabled={isProcessing}
             className="action-button bg-blue-600 hover:bg-blue-700 text-white"
@@ -117,6 +133,7 @@ export function ActionButtons() {
         {/* Call Button */}
         {validActions.includes('call') && (
           <button
+            type="button"
             onClick={() => handleAction('call', callAmount)}
             disabled={isProcessing}
             className="action-button bg-green-600 hover:bg-green-700 text-white"
@@ -227,6 +244,7 @@ export function ActionButtons() {
         {/* All-In Button */}
         {validActions.includes('all-in') && (
           <button
+            type="button"
             onClick={() => handleAction('all-in', currentPlayer.chips)}
             disabled={isProcessing}
             className="action-button bg-purple-600 hover:bg-purple-700 text-white"
@@ -248,6 +266,13 @@ export function ActionButtons() {
         <div className="mt-2 text-sm text-gray-400">
           Min raise: ${minRaise} | Call: ${callAmount} | Total: ${callAmount + raiseAmount} | Max
           chips: ${currentPlayer.chips}
+        </div>
+      )}
+
+      {/* Keyboard shortcuts hint */}
+      {!showBetInput && !showRaiseInput && (
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          Shortcuts: [F]old | [C]heck/Call | [B]et | [R]aise | [A]ll-in
         </div>
       )}
     </motion.div>

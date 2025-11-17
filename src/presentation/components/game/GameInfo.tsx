@@ -47,7 +47,9 @@ export function GameInfo() {
 
         <button
           type="button"
+          onClick={() => alert('Settings feature coming soon!')}
           className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          title="Settings (coming soon)"
         >
           <Settings className="w-4 h-4" />
           Settings
