@@ -19,6 +19,8 @@ export function PokerTable() {
     phase,
     actionHistory,
     startNewHand,
+    handNumber,
+    settings,
   } = useGameStore();
 
   // Calculate total pot including current bets
@@ -62,24 +64,25 @@ export function PokerTable() {
   // Determine winners and their hands at showdown (memoized)
   const showdownInfo = useMemo(() => {
     if (phase !== 'showdown' && phase !== 'complete') {
-      return { winners: [], winnerHands: new Map() };
+      return { winners: [], allHands: new Map() };
     }
 
     const gameState = useGameStore.getState();
     const playersInHand = getPlayersInHand(gameState);
 
     if (playersInHand.length === 0) {
-      return { winners: [], winnerHands: new Map() };
+      return { winners: [], allHands: new Map() };
     }
 
-    if (playersInHand.length === 1) {
-      const winner = playersInHand[0];
-      const winnerHands = new Map();
-      if (winner.holeCards.length === 2 && communityCards.length >= 3) {
+    const allHands = new Map();
+
+    // Evaluate all hands first
+    for (const player of playersInHand) {
+      if (player.holeCards.length === 2 && communityCards.length >= 3) {
         try {
-          const allCards = [...winner.holeCards, ...communityCards];
+          const allCards = [...player.holeCards, ...communityCards];
           const handResult = handEvaluator.evaluateHand(allCards);
-          winnerHands.set(winner.id, {
+          allHands.set(player.id, {
             rank: HAND_RANK_NAMES[handResult.rank],
             description: handResult.description,
           });
@@ -87,42 +90,43 @@ export function PokerTable() {
           // Ignore
         }
       }
-      return { winners: [winner.id], winnerHands };
     }
 
-    // Multiple players - evaluate all hands
+    // Find winners
+    if (playersInHand.length === 1) {
+      return { winners: [playersInHand[0].id], allHands };
+    }
+
     const playerHands = playersInHand.map((p) => ({
       playerId: p.id,
       cards: [...p.holeCards, ...communityCards],
     }));
 
     const winners = handEvaluator.findWinners(playerHands);
-    const winnerHands = new Map();
 
-    // Evaluate winner hands
-    for (const winnerId of winners) {
-      const player = players.find(p => p.id === winnerId);
-      if (player && player.holeCards.length === 2) {
-        try {
-          const allCards = [...player.holeCards, ...communityCards];
-          const handResult = handEvaluator.evaluateHand(allCards);
-          winnerHands.set(winnerId, {
-            rank: HAND_RANK_NAMES[handResult.rank],
-            description: handResult.description,
-          });
-        } catch (e) {
-          // Ignore
-        }
-      }
-    }
-
-    return { winners, winnerHands };
+    return { winners, allHands };
   }, [phase, players, communityCards]);
 
-  const { winners, winnerHands } = showdownInfo;
+  const { winners, allHands } = showdownInfo;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-800 to-green-900 p-8">
+      {/* Game Info Header */}
+      <div className="mb-4 flex gap-4 text-white">
+        <div className="rounded-lg bg-black/40 px-4 py-2 backdrop-blur-sm">
+          <span className="text-xs text-white/70">Hand #</span>
+          <span className="ml-2 font-bold">{handNumber}</span>
+        </div>
+        <div className="rounded-lg bg-black/40 px-4 py-2 backdrop-blur-sm">
+          <span className="text-xs text-white/70">Blinds</span>
+          <span className="ml-2 font-bold">${settings.smallBlind}/${settings.bigBlind}</span>
+        </div>
+        <div className="rounded-lg bg-black/40 px-4 py-2 backdrop-blur-sm">
+          <span className="text-xs text-white/70">Players</span>
+          <span className="ml-2 font-bold">{players.filter(p => p.status !== 'eliminated').length}/{players.length}</span>
+        </div>
+      </div>
+
       {/* Table */}
       <div className="relative flex h-[600px] w-[900px] items-center justify-center rounded-full border-8 border-green-700 bg-gradient-to-br from-green-600 to-green-700 shadow-2xl">
         {/* Center - Community Cards and Info */}
@@ -133,13 +137,28 @@ export function PokerTable() {
           </div>
 
           {/* Community Cards */}
-          <div className="flex gap-2">
-            {communityCards.length === 0 && phase !== 'waiting' && phase !== 'complete' && (
-              <div className="text-lg text-white/80">Dealing...</div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex gap-2">
+              {communityCards.length === 0 && phase !== 'waiting' && phase !== 'complete' && (
+                <div className="text-lg text-white/80">Dealing...</div>
+              )}
+              {communityCards.map((card, i) => (
+                <PlayingCard
+                  key={`community-${i}-${card.rank}${card.suit}`}
+                  card={card}
+                  className="shadow-xl"
+                />
+              ))}
+            </div>
+            {/* Community Cards Label */}
+            {communityCards.length > 0 && (
+              <div className="text-xs text-white/60">
+                {phase === 'flop' && communityCards.length === 3 && 'Flop'}
+                {phase === 'turn' && communityCards.length === 4 && 'Turn'}
+                {phase === 'river' && communityCards.length === 5 && 'River'}
+                {(phase === 'showdown' || phase === 'complete') && communityCards.length === 5 && 'Board'}
+              </div>
             )}
-            {communityCards.map((card, i) => (
-              <PlayingCard key={i} card={card} />
-            ))}
           </div>
 
           {/* Pot Display */}
@@ -172,9 +191,9 @@ export function PokerTable() {
               <div className="text-lg font-bold text-gray-900">
                 {winners.map(wId => players.find(p => p.id === wId)?.name).join(', ')}
               </div>
-              {winners.length === 1 && winnerHands.has(winners[0]) && (
+              {winners.length === 1 && allHands.has(winners[0]) && (
                 <div className="mt-1 text-sm font-semibold text-gray-800">
-                  {winnerHands.get(winners[0])?.rank}
+                  {allHands.get(winners[0])?.rank}
                 </div>
               )}
               {winners.length > 1 && (
@@ -282,25 +301,38 @@ export function PokerTable() {
               </div>
 
               {/* Hole Cards */}
-              <div className="flex gap-1">
-                {player.holeCards.length > 0 && (
-                  <>
-                    {/* Show cards if: human player, OR showdown/complete phase and player didn't fold */}
-                    {(isHuman || ((phase === 'showdown' || phase === 'complete') && player.status !== 'folded')) ? (
-                      player.holeCards.map((card, i) => (
-                        <PlayingCard
-                          key={i}
-                          card={card}
-                          className={isWinner ? 'ring-2 ring-green-400' : ''}
-                        />
-                      ))
-                    ) : (
-                      <>
-                        <PlayingCard faceDown />
-                        <PlayingCard faceDown />
-                      </>
-                    )}
-                  </>
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex gap-1">
+                  {player.holeCards.length > 0 && (
+                    <>
+                      {/* Show cards if: human player, OR showdown/complete phase and player didn't fold */}
+                      {(isHuman || ((phase === 'showdown' || phase === 'complete') && player.status !== 'folded')) ? (
+                        player.holeCards.map((card, i) => (
+                          <PlayingCard
+                            key={`${player.id}-${i}-${card.rank}${card.suit}`}
+                            card={card}
+                            className={isWinner ? 'ring-2 ring-green-400' : ''}
+                            animate={isHuman ? true : false}
+                          />
+                        ))
+                      ) : (
+                        <>
+                          <PlayingCard faceDown animate={false} />
+                          <PlayingCard faceDown animate={false} />
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Hand Rank at Showdown */}
+                {(phase === 'showdown' || phase === 'complete') && allHands.has(player.id) && player.status !== 'folded' && (
+                  <div className={cn(
+                    'rounded-lg px-3 py-1 text-xs font-bold shadow-md',
+                    isWinner ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-300'
+                  )}>
+                    {allHands.get(player.id)?.rank}
+                  </div>
                 )}
               </div>
             </div>
