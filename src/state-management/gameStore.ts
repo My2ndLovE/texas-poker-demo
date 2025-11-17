@@ -9,6 +9,15 @@ import { GamePhase, PlayerStatus } from '@/utils/constants';
 
 export type BotDifficulty = 'easy' | 'medium' | 'hard';
 
+export interface SessionStats {
+  handsPlayed: number;
+  handsWon: number;
+  biggestPot: number;
+  totalWinnings: number;
+  currentStreak: number;
+  startingChips: number;
+}
+
 interface GameStore {
   gameState: GameState | null;
   gameEngine: GameEngine;
@@ -19,6 +28,7 @@ interface GameStore {
   };
   botDifficulty: BotDifficulty;
   isProcessing: boolean;
+  sessionStats: SessionStats;
 
   // Actions
   initializeGame: (playerName: string, botCount: number, startingChips: number) => void;
@@ -26,6 +36,7 @@ interface GameStore {
   processPlayerAction: (action: Action) => void;
   processBotActions: () => Promise<void>;
   setBotDifficulty: (difficulty: BotDifficulty) => void;
+  updateStats: (wonAmount: number, potSize: number, isWinner: boolean) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -38,6 +49,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   botDifficulty: 'medium',
   isProcessing: false,
+  sessionStats: {
+    handsPlayed: 0,
+    handsWon: 0,
+    biggestPot: 0,
+    totalWinnings: 0,
+    currentStreak: 0,
+    startingChips: 0,
+  },
 
   initializeGame: (playerName: string, botCount: number, startingChips: number) => {
     const { gameEngine } = get();
@@ -52,7 +71,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     ];
 
     const gameState = gameEngine.createGame(players, 5, 10);
-    set({ gameState });
+    set({
+      gameState,
+      sessionStats: {
+        handsPlayed: 0,
+        handsWon: 0,
+        biggestPot: 0,
+        totalWinnings: 0,
+        currentStreak: 0,
+        startingChips,
+      },
+    });
   },
 
   startNewHand: () => {
@@ -129,5 +158,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setBotDifficulty: (difficulty: BotDifficulty) => {
     set({ botDifficulty: difficulty });
+  },
+
+  updateStats: (wonAmount: number, potSize: number, isWinner: boolean) => {
+    const { sessionStats } = get();
+
+    set({
+      sessionStats: {
+        ...sessionStats,
+        handsPlayed: sessionStats.handsPlayed + 1,
+        handsWon: isWinner ? sessionStats.handsWon + 1 : sessionStats.handsWon,
+        biggestPot: Math.max(sessionStats.biggestPot, potSize),
+        totalWinnings: sessionStats.totalWinnings + wonAmount,
+        currentStreak: isWinner ? sessionStats.currentStreak + 1 : 0,
+      },
+    });
   },
 }));
