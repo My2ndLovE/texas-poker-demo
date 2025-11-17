@@ -13,6 +13,22 @@ export function PlayerSeat({ player, isCurrentPlayer, isHuman }: PlayerSeatProps
   const isActive = player.status === 'active';
   const isFolded = player.status === 'folded';
 
+  // Action display helper
+  const getActionDisplay = () => {
+    if (!player.lastAction) return null;
+
+    const actionText: Record<string, string> = {
+      fold: 'Folded',
+      check: 'Checked',
+      call: `Called $${player.lastActionAmount}`,
+      bet: `Bet $${player.lastActionAmount}`,
+      raise: `Raised $${player.lastActionAmount}`,
+      'all-in': 'All-In!',
+    };
+
+    return actionText[player.lastAction] || player.lastAction;
+  };
+
   return (
     <motion.div
       className={`relative bg-gray-800/90 rounded-lg p-3 min-w-[180px] border-2 transition-all ${
@@ -20,8 +36,8 @@ export function PlayerSeat({ player, isCurrentPlayer, isHuman }: PlayerSeatProps
           ? 'border-yellow-400 shadow-lg shadow-yellow-400/50'
           : 'border-gray-700'
       } ${isFolded ? 'opacity-50' : ''}`}
-      animate={isCurrentPlayer && isActive ? { scale: [1, 1.05, 1] } : {}}
-      transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY }}
+      animate={isCurrentPlayer && isActive ? { scale: [1, 1.02, 1] } : {}}
+      transition={{ duration: 1, repeat: 3 }}
     >
       {/* Player Info */}
       <div className="flex items-center gap-2 mb-2">
@@ -57,6 +73,20 @@ export function PlayerSeat({ player, isCurrentPlayer, isHuman }: PlayerSeatProps
       {player.currentBet > 0 && (
         <div className="bg-green-600/20 border border-green-500 rounded px-2 py-1">
           <p className="text-xs text-green-400 font-bold">Bet: ${player.currentBet}</p>
+        </div>
+      )}
+
+      {/* Last Action Display */}
+      {getActionDisplay() && (
+        <div className="mb-2">
+          <motion.div
+            className="bg-blue-500/20 border border-blue-400 rounded px-2 py-1"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <p className="text-xs text-blue-300 font-semibold text-center">{getActionDisplay()}</p>
+          </motion.div>
         </div>
       )}
 

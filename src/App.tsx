@@ -3,6 +3,7 @@ import { ActionButtons } from './presentation/components/game/ActionButtons';
 import { GameInfo } from './presentation/components/game/GameInfo';
 import { HandRankDisplay } from './presentation/components/game/HandRankDisplay';
 import { PokerTable } from './presentation/components/game/PokerTable';
+import { WinnerAnnouncement } from './presentation/components/game/WinnerAnnouncement';
 import { useGameStore } from './state-management/gameStore';
 import { useSettingsStore } from './state-management/settingsStore';
 
@@ -54,6 +55,9 @@ function App() {
 
         {/* Action Buttons */}
         <ActionButtons />
+
+        {/* Winner Announcement Modal */}
+        <WinnerAnnouncement />
       </div>
     </div>
   );

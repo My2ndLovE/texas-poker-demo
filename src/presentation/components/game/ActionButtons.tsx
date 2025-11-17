@@ -129,31 +129,40 @@ export function ActionButtons() {
         {validActions.includes('bet') && (
           <div className="flex gap-2 items-center">
             {showBetInput ? (
-              <>
-                <input
-                  type="number"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(Number(e.target.value))}
-                  min={minBet}
-                  max={currentPlayer.chips}
-                  className="w-24 px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
-                />
-                <button
-                  onClick={() => handleAction('bet')}
-                  disabled={isProcessing || betAmount < minBet}
-                  className="action-button bg-yellow-600 hover:bg-yellow-700 text-white"
-                >
-                  Bet
-                </button>
-                <button
-                  onClick={() => setShowBetInput(false)}
-                  className="action-button bg-gray-600 hover:bg-gray-700 text-white"
-                >
-                  Cancel
-                </button>
-              </>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(Number(e.target.value))}
+                    min={minBet}
+                    max={currentPlayer.chips}
+                    step={Math.max(1, Math.floor((currentPlayer.chips - minBet) / 20))}
+                    className="w-40 accent-yellow-500"
+                  />
+                  <span className="text-white font-bold text-lg w-20">${betAmount}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAction('bet')}
+                    disabled={isProcessing || betAmount < minBet}
+                    className="action-button bg-yellow-600 hover:bg-yellow-700 text-white text-sm px-3 py-1"
+                  >
+                    Bet ${betAmount}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowBetInput(false)}
+                    className="action-button bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             ) : (
               <button
+                type="button"
                 onClick={() => handleAction('bet')}
                 disabled={isProcessing}
                 className="action-button bg-yellow-600 hover:bg-yellow-700 text-white"
@@ -168,31 +177,43 @@ export function ActionButtons() {
         {validActions.includes('raise') && (
           <div className="flex gap-2 items-center">
             {showRaiseInput ? (
-              <>
-                <input
-                  type="number"
-                  value={raiseAmount}
-                  onChange={(e) => setRaiseAmount(Number(e.target.value))}
-                  min={minRaise}
-                  max={currentPlayer.chips}
-                  className="w-24 px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
-                />
-                <button
-                  onClick={() => handleAction('raise')}
-                  disabled={isProcessing || raiseAmount < minRaise}
-                  className="action-button bg-yellow-600 hover:bg-yellow-700 text-white"
-                >
-                  Raise
-                </button>
-                <button
-                  onClick={() => setShowRaiseInput(false)}
-                  className="action-button bg-gray-600 hover:bg-gray-700 text-white"
-                >
-                  Cancel
-                </button>
-              </>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    value={raiseAmount}
+                    onChange={(e) => setRaiseAmount(Number(e.target.value))}
+                    min={minRaise}
+                    max={Math.max(minRaise, currentPlayer.chips - callAmount)}
+                    step={Math.max(
+                      1,
+                      Math.floor((currentPlayer.chips - callAmount - minRaise) / 20),
+                    )}
+                    className="w-40 accent-yellow-500"
+                  />
+                  <span className="text-white font-bold text-lg w-20">${raiseAmount}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAction('raise')}
+                    disabled={isProcessing || raiseAmount < minRaise}
+                    className="action-button bg-yellow-600 hover:bg-yellow-700 text-white text-sm px-3 py-1"
+                  >
+                    Raise to ${callAmount + raiseAmount}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRaiseInput(false)}
+                    className="action-button bg-gray-600 hover:bg-gray-700 text-white text-sm px-3 py-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             ) : (
               <button
+                type="button"
                 onClick={() => handleAction('raise')}
                 disabled={isProcessing}
                 className="action-button bg-yellow-600 hover:bg-yellow-700 text-white"

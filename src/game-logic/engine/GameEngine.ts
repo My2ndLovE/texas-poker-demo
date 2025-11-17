@@ -70,6 +70,8 @@ export class GameEngine {
         isDealer: false,
         isSmallBlind: false,
         isBigBlind: false,
+        lastAction: undefined,
+        lastActionAmount: undefined,
       }));
 
     // Check for game over
@@ -126,7 +128,11 @@ export class GameEngine {
     // Execute action
     this.executeAction(player, actionType, amount);
 
-    // Record action
+    // Record action on player (for UI feedback)
+    player.lastAction = actionType;
+    player.lastActionAmount = amount;
+
+    // Record action in history
     const action: PlayerAction = {
       playerId,
       type: actionType,

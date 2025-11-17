@@ -48,6 +48,9 @@ export interface Player {
   // Bot-specific fields
   botDifficulty?: 'easy' | 'medium' | 'hard';
   botPersonality?: BotPersonality;
+  // Last action taken (for UI feedback)
+  lastAction?: ActionType;
+  lastActionAmount?: number;
 }
 
 export interface BotPersonality {

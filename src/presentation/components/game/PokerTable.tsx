@@ -1,4 +1,5 @@
 import { useGameStore } from '@/state-management/gameStore';
+import { motion } from 'framer-motion';
 import { CommunityCards } from './CommunityCards';
 import { PlayerSeat } from './PlayerSeat';
 import { PotDisplay } from './PotDisplay';
@@ -36,10 +37,31 @@ export function PokerTable() {
         ))}
       </div>
 
-      {/* Game Phase Indicator */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 px-6 py-2 rounded-full">
-        <p className="text-white font-bold uppercase tracking-wider">{gameState.phase}</p>
-      </div>
+      {/* Your Turn Indicator */}
+      {(() => {
+        const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+        if (currentPlayer?.type === 'human' && currentPlayer?.status === 'active') {
+          return (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2">
+              <motion.div
+                className="bg-yellow-500 px-8 py-3 rounded-full shadow-2xl"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  boxShadow: [
+                    '0 0 20px rgba(234, 179, 8, 0.5)',
+                    '0 0 40px rgba(234, 179, 8, 0.8)',
+                    '0 0 20px rgba(234, 179, 8, 0.5)',
+                  ],
+                }}
+                transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
+              >
+                <p className="text-black font-black uppercase tracking-wider text-lg">YOUR TURN!</p>
+              </motion.div>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Hand Number */}
       <div className="absolute top-4 left-4 bg-black/50 px-4 py-2 rounded-lg">
