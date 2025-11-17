@@ -38,9 +38,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   processPlayerAction: (playerId: string, action: ActionType, amount = 0) => {
-    const { gameEngine } = get();
+    const { gameEngine, isProcessingAction } = get();
     if (!gameEngine) {
       console.error('Game engine not initialized');
+      return;
+    }
+
+    // Prevent race conditions: block rapid clicks while processing
+    if (isProcessingAction) {
+      console.warn('Action blocked: already processing another action');
       return;
     }
 

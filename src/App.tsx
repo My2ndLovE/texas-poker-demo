@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { ActionButtons } from './presentation/components/game/ActionButtons';
 import { GameInfo } from './presentation/components/game/GameInfo';
+import { GameOverScreen } from './presentation/components/game/GameOverScreen';
 import { HandRankDisplay } from './presentation/components/game/HandRankDisplay';
 import { PokerTable } from './presentation/components/game/PokerTable';
 import { WinnerAnnouncement } from './presentation/components/game/WinnerAnnouncement';
@@ -58,6 +59,9 @@ function App() {
 
         {/* Winner Announcement Modal */}
         <WinnerAnnouncement />
+
+        {/* Game Over Screen */}
+        <GameOverScreen />
       </div>
     </div>
   );

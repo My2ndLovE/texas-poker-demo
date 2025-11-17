@@ -180,14 +180,16 @@ export class GameEngine {
 
       case 'bet':
       case 'raise': {
+        // CRITICAL: Calculate currentBet BEFORE updating player's bet
+        const previousBet = bettingRules.getCurrentBet(this.state);
+
         const betAmount = Math.min(amount, player.chips);
         player.chips -= betAmount;
         player.currentBet += betAmount;
         player.totalBet += betAmount;
 
-        // Update minimum raise
-        const currentBet = bettingRules.getCurrentBet(this.state);
-        const raiseSize = player.currentBet - currentBet;
+        // Update minimum raise based on the size of THIS raise/bet
+        const raiseSize = player.currentBet - previousBet;
         this.state.minimumRaise = raiseSize;
 
         // Mark this player as the last aggressor (everyone must act after them)
@@ -474,6 +476,23 @@ export class GameEngine {
    * Complete the hand and prepare for next
    */
   private completeHand(): void {
+    // Check if game should end
+    const playersWithChips = this.state.players.filter((p) => p.chips > 0);
+
+    // Game over if only 1 player remains with chips
+    if (playersWithChips.length <= 1) {
+      this.state.phase = 'game-over' as GamePhase;
+      return;
+    }
+
+    // Game over if human player is eliminated
+    const humanPlayer = this.state.players.find((p) => p.type === 'human');
+    if (humanPlayer && humanPlayer.chips === 0) {
+      this.state.phase = 'game-over' as GamePhase;
+      return;
+    }
+
+    // Otherwise, hand is complete and ready for next hand
     this.state.phase = 'hand-complete' as GamePhase;
     this.state.handNumber++;
 

@@ -11,8 +11,8 @@ export class PotCalculator {
    * @returns PotStructure with main pot, side pots, and total
    */
   calculatePots(players: Player[]): PotStructure {
-    // Filter to players who have bet (not folded and have totalBet > 0)
-    const playersWithBets = players.filter((p) => p.status !== 'folded' && p.totalBet > 0);
+    // Get all players who have bet money (including folded - their chips stay in pot!)
+    const playersWithBets = players.filter((p) => p.totalBet > 0);
 
     if (playersWithBets.length === 0) {
       return {
@@ -22,7 +22,7 @@ export class PotCalculator {
       };
     }
 
-    // Sort players by total bet amount (ascending)
+    // Sort ALL players with bets by total bet amount (ascending)
     const sortedPlayers = [...playersWithBets].sort((a, b) => a.totalBet - b.totalBet);
 
     const pots: SidePot[] = [];
@@ -34,9 +34,12 @@ export class PotCalculator {
       const contribution = currentBet - previousBet;
 
       if (contribution > 0) {
-        // All players from index i onwards are eligible for this pot
-        const eligiblePlayers = sortedPlayers.slice(i);
-        const potAmount = contribution * eligiblePlayers.length;
+        // Count ALL players (including folded) who contributed to this level
+        const contributingPlayers = sortedPlayers.slice(i);
+        const potAmount = contribution * contributingPlayers.length;
+
+        // But only NON-FOLDED players are eligible to win
+        const eligiblePlayers = contributingPlayers.filter((p) => p.status !== 'folded');
 
         pots.push({
           amount: potAmount,
