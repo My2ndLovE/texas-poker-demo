@@ -43,8 +43,7 @@
     "vitest": "^1.0.4"
   },
   "dependencies": {
-    "@types/pokersolver": "^2.1.4",
-    "lucide-svelte": "^0.295.0",
+    "lucide-svelte": "^0.554.0",
     "pokersolver": "^2.1.4"
   }
 }

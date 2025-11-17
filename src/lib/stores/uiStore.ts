@@ -17,6 +17,11 @@ export interface Toast {
 	id: string;
 }
 
+export interface Modal {
+	type: 'winner' | 'settings' | 'stats' | null;
+	data?: any;
+}
+
 interface UIState {
 	isSettingsOpen: boolean;
 	isStatsOpen: boolean;
@@ -24,6 +29,7 @@ interface UIState {
 	winnerData: WinnerData | null;
 	toasts: Toast[];
 	isGameMenuOpen: boolean;
+	activeModal: Modal | null;
 }
 
 const initialState: UIState = {
@@ -32,7 +38,8 @@ const initialState: UIState = {
 	showWinnerAnnouncement: false,
 	winnerData: null,
 	toasts: [],
-	isGameMenuOpen: false
+	isGameMenuOpen: false,
+	activeModal: null
 };
 
 export const uiStore = writable<UIState>(initialState);
@@ -122,5 +129,25 @@ export function toggleGameMenu(): void {
 	uiStore.update((state) => ({
 		...state,
 		isGameMenuOpen: !state.isGameMenuOpen
+	}));
+}
+
+/**
+ * Show a modal
+ */
+export function showModal(type: 'winner' | 'settings' | 'stats', data?: any): void {
+	uiStore.update((state) => ({
+		...state,
+		activeModal: { type, data }
+	}));
+}
+
+/**
+ * Close active modal
+ */
+export function closeModal(): void {
+	uiStore.update((state) => ({
+		...state,
+		activeModal: null
 	}));
 }

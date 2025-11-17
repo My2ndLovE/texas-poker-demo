@@ -2,120 +2,152 @@
 	import { gameStore, isHumanTurn, humanPlayer } from '$stores/gameStore';
 	import { goto } from '$app/navigation';
 	import { Home } from 'lucide-svelte';
+	import PlayingCard from '$components/cards/PlayingCard.svelte';
+	import PlayerPosition from '$components/game/PlayerPosition.svelte';
+	import ActionButtons from '$components/game/ActionButtons.svelte';
+	import ActionLog from '$components/game/ActionLog.svelte';
+	import Toast from '$components/ui/Toast.svelte';
+	import WinnerModal from '$components/ui/WinnerModal.svelte';
+	import { formatChips } from '$lib/utils/formatters';
 
 	// Redirect if no game in progress
 	$: if (!$gameStore) {
 		goto('/');
 	}
+
+	// Calculate player positions for circular layout
+	function getPlayerPosition(index: number, total: number) {
+		const angle = (index / total) * 2 * Math.PI - Math.PI / 2; // Start from top
+		const radiusX = 42; // Horizontal radius percentage
+		const radiusY = 35; // Vertical radius percentage
+		return {
+			left: `${50 + radiusX * Math.cos(angle)}%`,
+			top: `${50 + radiusY * Math.sin(angle)}%`
+		};
+	}
 </script>
 
+<!-- Toast Notifications -->
+<Toast />
+
+<!-- Winner Modal -->
+<WinnerModal />
+
 <div class="min-h-screen bg-gradient-to-br from-poker-darkGreen to-poker-green p-4">
-	<!-- Header -->
-	<div class="flex justify-between items-center mb-4">
-		<button
-			on:click={() => goto('/')}
-			class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors"
-		>
-			<Home size={20} />
-			Leave Game
-		</button>
+	{#if $gameStore}
+		<div class="flex gap-4 h-screen">
+			<!-- Main Game Area -->
+			<div class="flex-1 flex flex-col">
+				<!-- Header -->
+				<div class="flex justify-between items-center mb-4">
+					<button
+						onclick={() => goto('/')}
+						class="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors shadow-lg"
+					>
+						<Home size={20} />
+						Leave Game
+					</button>
 
-		<div class="text-white text-lg">
-			<span class="font-semibold">Hand #{$gameStore?.handNumber || 1}</span>
-			<span class="mx-4">|</span>
-			<span>Pot: ${$gameStore?.pot.totalPot || 0}</span>
-		</div>
+					<div class="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg">
+						<div class="flex gap-6 items-center">
+							<div>
+								<span class="text-gray-400 text-sm">Hand</span>
+								<span class="ml-2 font-bold text-xl">#{$gameStore.handNumber}</span>
+							</div>
+							<div class="w-px h-8 bg-gray-600"></div>
+							<div>
+								<span class="text-gray-400 text-sm">Blinds</span>
+								<span class="ml-2 font-bold text-lg"
+									>${$gameStore.smallBlind}/${$gameStore.bigBlind}</span
+								>
+							</div>
+							<div class="w-px h-8 bg-gray-600"></div>
+							<div>
+								<span class="text-gray-400 text-sm">Phase</span>
+								<span class="ml-2 font-bold text-lg capitalize">{$gameStore.bettingRound}</span>
+							</div>
+						</div>
+					</div>
 
-		<div class="text-white">
-			{#if $humanPlayer}
-				<div class="text-right">
-					<div class="font-semibold">{$humanPlayer.name}</div>
-					<div class="text-sm">Chips: ${$humanPlayer.chips}</div>
+					<div class="bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg min-w-[150px]">
+						{#if $humanPlayer}
+							<div class="text-sm text-gray-400">Your Chips</div>
+							<div class="text-2xl font-bold text-yellow-400">
+								${formatChips($humanPlayer.chips)}
+							</div>
+						{/if}
+					</div>
 				</div>
-			{/if}
-		</div>
-	</div>
 
-	<!-- Game Table -->
-	<div class="flex items-center justify-center h-[calc(100vh-120px)]">
-		{#if $gameStore}
-			<div class="bg-poker-felt rounded-full w-[900px] h-[600px] relative shadow-2xl border-8 border-gray-800">
-				<!-- Community Cards -->
-				<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-					<div class="flex gap-2">
-						{#each $gameStore.communityCards as card}
-							<div class="w-16 h-24 bg-white rounded-lg shadow-lg flex items-center justify-center text-2xl font-bold">
-								{card.rank}{card.suit}
+				<!-- Poker Table -->
+				<div class="flex-1 flex items-center justify-center">
+					<div
+						class="bg-poker-felt rounded-[50%] w-[900px] h-[600px] relative shadow-2xl border-8 border-amber-900"
+						style="box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 10px 40px rgba(0,0,0,0.3);"
+					>
+						<!-- Table Center - Community Cards -->
+						<div
+							class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-4"
+						>
+							<!-- Community Cards -->
+							<div class="flex gap-2">
+								{#if $gameStore.communityCards.length > 0}
+									{#each $gameStore.communityCards as card}
+										<PlayingCard {card} />
+									{/each}
+								{:else}
+									<!-- Placeholder for no community cards yet -->
+									<div class="text-white text-opacity-30 text-sm italic">Preflop</div>
+								{/if}
+							</div>
+
+							<!-- Pot Display -->
+							<div class="bg-gradient-to-br from-yellow-600 to-yellow-700 px-8 py-4 rounded-lg shadow-xl border-2 border-yellow-500">
+								<div class="text-yellow-200 text-xs font-semibold uppercase tracking-wider">
+									Pot
+								</div>
+								<div class="text-white text-3xl font-bold">
+									${formatChips($gameStore.pot.totalPot)}
+								</div>
+								{#if $gameStore.currentBet > 0}
+									<div class="text-yellow-200 text-xs mt-1">
+										Current Bet: ${formatChips($gameStore.currentBet)}
+									</div>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Players in circular positions -->
+						{#each $gameStore.players as player, i}
+							{@const pos = getPlayerPosition(i, $gameStore.players.length)}
+							<div
+								class="absolute transform -translate-x-1/2 -translate-y-1/2"
+								style="left: {pos.left}; top: {pos.top};"
+							>
+								<PlayerPosition
+									{player}
+									isCurrentPlayer={i === $gameStore.currentPlayerIndex}
+									isHuman={player.id === $humanPlayer?.id}
+								/>
 							</div>
 						{/each}
 					</div>
-
-					<!-- Pot Display -->
-					<div class="mt-4 text-center">
-						<div class="bg-gray-900 bg-opacity-90 text-white px-6 py-3 rounded-lg shadow-lg">
-							<div class="text-sm font-semibold">POT</div>
-							<div class="text-2xl font-bold">${$gameStore.pot.totalPot}</div>
-						</div>
-					</div>
 				</div>
 
-				<!-- Players (simplified layout) -->
-				{#each $gameStore.players as player, i}
-					<div
-						class="absolute text-white"
-						style="
-							left: {50 + 40 * Math.cos((i / $gameStore.players.length) * 2 * Math.PI)}%;
-							top: {50 + 30 * Math.sin((i / $gameStore.players.length) * 2 * Math.PI)}%;
-							transform: translate(-50%, -50%);
-						"
-					>
-						<div class="bg-gray-900 bg-opacity-90 rounded-lg p-3 min-w-[120px]" class:ring-4={i === $gameStore.currentPlayerIndex} class:ring-yellow-400={i === $gameStore.currentPlayerIndex}>
-							<div class="font-semibold text-sm">{player.name}</div>
-							<div class="text-xs">${player.chips}</div>
-							{#if player.bet > 0}
-								<div class="text-xs text-yellow-400">Bet: ${player.bet}</div>
-							{/if}
-							{#if player.status === 'folded'}
-								<div class="text-xs text-gray-400">Folded</div>
-							{/if}
-							{#if player.isDealer}
-								<div class="absolute -top-2 -right-2 bg-yellow-400 text-gray-900 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">D</div>
-							{/if}
-						</div>
-					</div>
-				{/each}
-
-				<!-- Action Buttons (for human player) -->
-				{#if $isHumanTurn && $humanPlayer}
-					<div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-						<button class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors">
-							Fold
-						</button>
-						<button class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
-							Check
-						</button>
-						<button class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
-							Call
-						</button>
-						<button class="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors">
-							Raise
-						</button>
-					</div>
-				{/if}
+				<!-- Action Buttons Area -->
+				<div class="mt-4">
+					<ActionButtons />
+				</div>
 			</div>
-		{:else}
-			<div class="text-white text-xl">Loading game...</div>
-		{/if}
-	</div>
 
-	<!-- Game Info -->
-	<div class="text-center text-white mt-4 text-sm">
-		{#if $gameStore}
-			<span>Phase: {$gameStore.bettingRound}</span>
-			<span class="mx-4">|</span>
-			<span>Current Bet: ${$gameStore.currentBet}</span>
-			<span class="mx-4">|</span>
-			<span>Blinds: ${$gameStore.smallBlind}/${$gameStore.bigBlind}</span>
-		{/if}
-	</div>
+			<!-- Sidebar - Action Log -->
+			<div class="w-80">
+				<ActionLog />
+			</div>
+		</div>
+	{:else}
+		<div class="flex items-center justify-center h-screen">
+			<div class="text-white text-2xl">Loading game...</div>
+		</div>
+	{/if}
 </div>

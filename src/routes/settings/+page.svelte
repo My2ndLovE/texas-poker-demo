@@ -2,6 +2,29 @@
 	import { goto } from '$app/navigation';
 	import { settingsStore, updateSetting } from '$stores/settingsStore';
 	import { ArrowLeft, Save } from 'lucide-svelte';
+	import { BLIND_PRESETS } from '$lib/utils/constants';
+
+	// Helper to get current blind level index
+	let selectedBlindIndex = $state(
+		BLIND_PRESETS.findIndex(
+			(preset) =>
+				preset.small === $settingsStore.blindLevel.small &&
+				preset.big === $settingsStore.blindLevel.big
+		) || 1
+	);
+
+	// Update store when selection changes
+	$effect(() => {
+		if (selectedBlindIndex >= 0 && selectedBlindIndex < BLIND_PRESETS.length) {
+			settingsStore.update((s) => ({
+				...s,
+				blindLevel: {
+					small: BLIND_PRESETS[selectedBlindIndex].small,
+					big: BLIND_PRESETS[selectedBlindIndex].big
+				}
+			}));
+		}
+	});
 
 	function handleSave() {
 		goto('/');
@@ -82,14 +105,12 @@
 					Blind Level (Small/Big)
 				</label>
 				<select
-					bind:value={$settingsStore.blindLevel}
+					bind:value={selectedBlindIndex}
 					class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-poker-green"
 				>
-					<option value={{ small: 5, big: 10 }}>$5/$10</option>
-					<option value={{ small: 10, big: 20 }}>$10/$20</option>
-					<option value={{ small: 25, big: 50 }}>$25/$50</option>
-					<option value={{ small: 50, big: 100 }}>$50/$100</option>
-					<option value={{ small: 100, big: 200 }}>$100/$200</option>
+					{#each BLIND_PRESETS as preset, i}
+						<option value={i}>{preset.label}</option>
+					{/each}
 				</select>
 			</div>
 
