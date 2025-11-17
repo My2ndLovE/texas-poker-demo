@@ -136,9 +136,13 @@ export class GameEngine {
     let newMinRaise = state.minRaise;
 
     if (action.type === ActionType.Bet || action.type === ActionType.Raise) {
-      const raiseAmount = action.amount - state.currentBet;
-      newCurrentBet = action.amount;
-      newMinRaise = raiseAmount;
+      // Find the updated player to get their new current bet
+      const updatedPlayer = updatedPlayers.find((p) => p.id === action.playerId);
+      if (updatedPlayer) {
+        const raiseAmount = updatedPlayer.currentBet - state.currentBet;
+        newCurrentBet = updatedPlayer.currentBet;
+        newMinRaise = raiseAmount;
+      }
     }
 
     // Get next player to act
@@ -210,7 +214,7 @@ export class GameEngine {
           const betAmount = Math.min(action.amount, p.chips);
           return {
             ...p,
-            currentBet: betAmount,
+            currentBet: p.currentBet + betAmount,
             totalBet: p.totalBet + betAmount,
             chips: p.chips - betAmount,
             status: betAmount === p.chips ? PlayerStatus.AllIn : p.status,
@@ -342,16 +346,30 @@ export class GameEngine {
 
     const winnerIds = this.handEvaluator.findWinners(hands);
 
-    // Distribute pots
-    // For now, simplified: winners split total pot
-    const winAmount = Math.floor(state.pot.totalPot / winnerIds.length);
+    // Distribute pots with proper side pot handling
+    let updatedPlayers = [...state.players];
 
-    const updatedPlayers = state.players.map((p) => {
-      if (winnerIds.includes(p.id)) {
-        return { ...p, chips: p.chips + winAmount };
+    // Award main pot to eligible winners
+    const mainPotWinners = winnerIds.filter((id) =>
+      state.pot.mainPotEligiblePlayers.includes(id)
+    );
+    if (mainPotWinners.length > 0 && state.pot.mainPot > 0) {
+      const mainPotShare = Math.floor(state.pot.mainPot / mainPotWinners.length);
+      updatedPlayers = updatedPlayers.map((p) =>
+        mainPotWinners.includes(p.id) ? { ...p, chips: p.chips + mainPotShare } : p
+      );
+    }
+
+    // Award each side pot to eligible winners
+    for (const sidePot of state.pot.sidePots) {
+      const sidePotWinners = winnerIds.filter((id) => sidePot.eligiblePlayerIds.includes(id));
+      if (sidePotWinners.length > 0) {
+        const sidePotShare = Math.floor(sidePot.amount / sidePotWinners.length);
+        updatedPlayers = updatedPlayers.map((p) =>
+          sidePotWinners.includes(p.id) ? { ...p, chips: p.chips + sidePotShare } : p
+        );
       }
-      return p;
-    });
+    }
 
     return {
       ...state,

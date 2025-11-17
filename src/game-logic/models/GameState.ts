@@ -1,14 +1,14 @@
 import { Card } from './Card';
 import { Player } from './Player';
 import { Action } from './Action';
-import { PotStructure } from './Pot';
 import { GamePhase } from '@/utils/constants';
+import type { PotResult } from '../pot/PotCalculator';
 
 export interface GameState {
   phase: GamePhase;
   players: Player[];
   communityCards: Card[];
-  pot: PotStructure;
+  pot: PotResult;
   currentBet: number;
   minRaise: number;
   dealerIndex: number;
@@ -30,7 +30,7 @@ export const createInitialGameState = (
   phase: GamePhase.WaitingToStart,
   players,
   communityCards: [],
-  pot: { mainPot: 0, sidePots: [], totalPot: 0 },
+  pot: { mainPot: 0, sidePots: [], totalPot: 0, mainPotEligiblePlayers: [] },
   currentBet: 0,
   minRaise: bigBlind,
   dealerIndex,
