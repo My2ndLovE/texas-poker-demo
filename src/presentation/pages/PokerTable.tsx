@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '@/state-management/gameStore';
 import { PlayerSeat } from '../components/game/PlayerSeat';
 import { ActionButtons } from '../components/game/ActionButtons';
@@ -7,6 +8,7 @@ import { createAction } from '@/game-logic/models/Action';
 import { ActionType, GamePhase, PlayerStatus } from '@/utils/constants';
 
 export const PokerTable: React.FC = () => {
+  const navigate = useNavigate();
   const {
     gameState,
     startNewHand,
@@ -96,6 +98,9 @@ export const PokerTable: React.FC = () => {
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isHumanTurn = currentPlayer && !currentPlayer.isBot;
 
+  // Check if player has busted out
+  const playerBusted = humanPlayer && humanPlayer.chips === 0;
+
   const handleAction = (action: ActionType, amount: number) => {
     if (!humanPlayer || isProcessing) return;
 
@@ -109,19 +114,60 @@ export const PokerTable: React.FC = () => {
     }
   };
 
+  // Game Over Screen
+  if (playerBusted && gameState.phase === GamePhase.HandComplete) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-8">
+        <div className="bg-gray-800 text-white rounded-2xl shadow-2xl p-12 max-w-md w-full text-center border-4 border-red-500">
+          <div className="text-6xl mb-4">💔</div>
+          <h1 className="text-4xl font-bold mb-4">Game Over</h1>
+          <p className="text-xl text-gray-300 mb-2">You've run out of chips!</p>
+          <p className="text-gray-400 mb-8">Hands played: {gameState.handNumber}</p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/')}
+              className="w-full py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 rounded-lg font-bold text-xl transition transform hover:scale-105"
+            >
+              🎮 Play Again
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition"
+            >
+              Back to Menu
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-poker-green-dark to-poker-green p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-4 rounded-lg mb-4 flex justify-between items-center shadow-xl">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <span>♠️♥️</span>
-              Texas Hold'em Poker
-              <span>♦️♣️</span>
-            </h1>
-            <div className="text-sm text-gray-400">
-              Hand #{gameState.handNumber} | {gameState.phase}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to quit? Your progress will be lost.')) {
+                  navigate('/');
+                }
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium text-sm transition"
+            >
+              ← Quit
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <span>♠️♥️</span>
+                Texas Hold'em Poker
+                <span>♦️♣️</span>
+              </h1>
+              <div className="text-sm text-gray-400">
+                Hand #{gameState.handNumber} | {gameState.phase}
+              </div>
             </div>
           </div>
           <div className="text-right">
@@ -195,6 +241,7 @@ export const PokerTable: React.FC = () => {
                   player={humanPlayer}
                   currentBet={gameState.currentBet}
                   minRaise={gameState.minRaise}
+                  potSize={gameState.pot.totalPot}
                   onAction={handleAction}
                 />
               )}
