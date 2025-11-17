@@ -12,9 +12,7 @@ export class PotCalculator {
    */
   calculatePots(players: Player[]): PotStructure {
     // Filter to players who have bet (not folded and have totalBet > 0)
-    const playersWithBets = players.filter(
-      (p) => p.status !== 'folded' && p.totalBet > 0
-    );
+    const playersWithBets = players.filter((p) => p.status !== 'folded' && p.totalBet > 0);
 
     if (playersWithBets.length === 0) {
       return {
@@ -73,7 +71,7 @@ export class PotCalculator {
     pot: SidePot,
     winnerIds: string[],
     dealerIndex: number,
-    players: Player[]
+    players: Player[],
   ): Map<string, number> {
     const distribution = new Map<string, number>();
 
@@ -99,7 +97,7 @@ export class PotCalculator {
       const winnerWithOddChip = this.getPlayerClosestToDealer(
         eligibleWinners,
         dealerIndex,
-        players
+        players,
       );
       if (winnerWithOddChip) {
         const currentAmount = distribution.get(winnerWithOddChip) || 0;
@@ -117,7 +115,7 @@ export class PotCalculator {
   private getPlayerClosestToDealer(
     playerIds: string[],
     dealerIndex: number,
-    allPlayers: Player[]
+    allPlayers: Player[],
   ): string | null {
     if (playerIds.length === 0) {
       return null;
@@ -133,7 +131,7 @@ export class PotCalculator {
     const distances = playerIds.map((id) => {
       const seatIndex = seatMap.get(id);
       if (seatIndex === undefined) {
-        return { id, distance: Infinity };
+        return { id, distance: Number.POSITIVE_INFINITY };
       }
 
       // Calculate clockwise distance from dealer

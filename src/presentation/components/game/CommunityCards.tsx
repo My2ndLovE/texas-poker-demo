@@ -1,6 +1,6 @@
 import type { Card } from '@/types';
-import { PlayingCard } from '../cards/PlayingCard';
 import { motion } from 'framer-motion';
+import { PlayingCard } from '../cards/PlayingCard';
 
 interface CommunityCardsProps {
   cards: Card[];

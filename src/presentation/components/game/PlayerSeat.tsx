@@ -1,7 +1,7 @@
 import type { Player } from '@/types';
-import { PlayingCard } from '../cards/PlayingCard';
 import { motion } from 'framer-motion';
-import { User, Bot } from 'lucide-react';
+import { Bot, User } from 'lucide-react';
+import { PlayingCard } from '../cards/PlayingCard';
 
 interface PlayerSeatProps {
   player: Player;
@@ -21,7 +21,7 @@ export function PlayerSeat({ player, isCurrentPlayer, isHuman }: PlayerSeatProps
           : 'border-gray-700'
       } ${isFolded ? 'opacity-50' : ''}`}
       animate={isCurrentPlayer && isActive ? { scale: [1, 1.05, 1] } : {}}
-      transition={{ duration: 0.5, repeat: Infinity }}
+      transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY }}
     >
       {/* Player Info */}
       <div className="flex items-center gap-2 mb-2">
@@ -34,9 +34,7 @@ export function PlayerSeat({ player, isCurrentPlayer, isHuman }: PlayerSeatProps
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-white truncate">{player.name}</p>
-          <p className="text-sm text-gray-400">
-            ${player.chips.toLocaleString()}
-          </p>
+          <p className="text-sm text-gray-400">${player.chips.toLocaleString()}</p>
         </div>
       </div>
 
@@ -58,28 +56,20 @@ export function PlayerSeat({ player, isCurrentPlayer, isHuman }: PlayerSeatProps
       {/* Current Bet */}
       {player.currentBet > 0 && (
         <div className="bg-green-600/20 border border-green-500 rounded px-2 py-1">
-          <p className="text-xs text-green-400 font-bold">
-            Bet: ${player.currentBet}
-          </p>
+          <p className="text-xs text-green-400 font-bold">Bet: ${player.currentBet}</p>
         </div>
       )}
 
       {/* Status Indicators */}
       <div className="flex gap-1 mt-2">
         {player.isDealer && (
-          <span className="bg-yellow-500 text-black text-xs px-2 py-0.5 rounded font-bold">
-            D
-          </span>
+          <span className="bg-yellow-500 text-black text-xs px-2 py-0.5 rounded font-bold">D</span>
         )}
         {player.isSmallBlind && (
-          <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded font-bold">
-            SB
-          </span>
+          <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded font-bold">SB</span>
         )}
         {player.isBigBlind && (
-          <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded font-bold">
-            BB
-          </span>
+          <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded font-bold">BB</span>
         )}
         {player.status === 'all-in' && (
           <span className="bg-purple-500 text-white text-xs px-2 py-0.5 rounded font-bold">
@@ -94,7 +84,7 @@ export function PlayerSeat({ player, isCurrentPlayer, isHuman }: PlayerSeatProps
           <motion.div
             className="bg-blue-500 rounded-full p-2"
             animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
+            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
           >
             <span className="text-white text-xs font-bold">...</span>
           </motion.div>

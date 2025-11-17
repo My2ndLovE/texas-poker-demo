@@ -57,7 +57,15 @@ export interface BotPersonality {
   adaptability: number; // 0-1: how much they adjust to opponents
 }
 
-export type GamePhase = 'menu' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'hand-complete' | 'game-over';
+export type GamePhase =
+  | 'menu'
+  | 'preflop'
+  | 'flop'
+  | 'turn'
+  | 'river'
+  | 'showdown'
+  | 'hand-complete'
+  | 'game-over';
 
 export type ActionType = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'all-in';
 
@@ -143,10 +151,7 @@ export function isActivePlayer(player: Player): boolean {
 }
 
 export function canPlayerAct(player: Player): boolean {
-  return (
-    player.status === 'active' &&
-    player.chips > 0
-  );
+  return player.status === 'active' && player.chips > 0;
 }
 
 // Utility types

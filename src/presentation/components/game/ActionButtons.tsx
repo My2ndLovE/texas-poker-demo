@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useGameStore } from '@/state-management/gameStore';
 import { bettingRules } from '@/game-logic/rules/BettingRules';
+import { useGameStore } from '@/state-management/gameStore';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 
 export function ActionButtons() {
   const gameState = useGameStore((state) => state.gameState);
@@ -9,6 +9,8 @@ export function ActionButtons() {
   const isProcessing = useGameStore((state) => state.isProcessingAction);
   const [raiseAmount, setRaiseAmount] = useState(0);
   const [showRaiseInput, setShowRaiseInput] = useState(false);
+  const [showBetInput, setShowBetInput] = useState(false);
+  const [betAmount, setBetAmount] = useState(0);
 
   if (!gameState) return null;
 
@@ -22,8 +24,32 @@ export function ActionButtons() {
   const validActions = bettingRules.getValidActions(currentPlayer, gameState);
   const callAmount = bettingRules.getCallAmount(currentPlayer, gameState);
   const minRaise = bettingRules.getMinimumRaise(gameState);
+  const minBet = gameState.bigBlindAmount;
 
-  const handleAction = (action: string) => {
+  const handleAction = (action: string, amount?: number) => {
+    // Handle bet action
+    if (action === 'bet' && !showBetInput) {
+      setBetAmount(minBet);
+      setShowBetInput(true);
+      return;
+    }
+
+    if (action === 'bet' && showBetInput) {
+      // Validate bet amount
+      if (!Number.isFinite(betAmount) || betAmount < minBet) {
+        alert(`Bet must be at least $${minBet}`);
+        return;
+      }
+      if (betAmount > currentPlayer.chips) {
+        alert(`Bet cannot exceed your chips ($${currentPlayer.chips})`);
+        return;
+      }
+      processPlayerAction(currentPlayer.id, 'bet', betAmount);
+      setShowBetInput(false);
+      return;
+    }
+
+    // Handle raise action
     if (action === 'raise' && !showRaiseInput) {
       setRaiseAmount(minRaise);
       setShowRaiseInput(true);
@@ -31,13 +57,31 @@ export function ActionButtons() {
     }
 
     if (action === 'raise' && showRaiseInput) {
-      processPlayerAction(currentPlayer.id, 'raise', raiseAmount);
+      // Validate raise amount
+      if (!Number.isFinite(raiseAmount) || raiseAmount < minRaise) {
+        alert(`Raise must be at least $${minRaise}`);
+        return;
+      }
+      // CRITICAL FIX: For raise, we need to pass call amount + raise amount
+      const totalAmount = callAmount + raiseAmount;
+      if (totalAmount > currentPlayer.chips) {
+        alert(`Total amount ($${totalAmount}) exceeds your chips ($${currentPlayer.chips})`);
+        return;
+      }
+      processPlayerAction(currentPlayer.id, 'raise', totalAmount);
       setShowRaiseInput(false);
       return;
     }
 
-    processPlayerAction(currentPlayer.id, action as any, callAmount);
+    // For other actions (fold, check, call, all-in)
+    const finalAmount = amount ?? 0;
+    if (!Number.isFinite(finalAmount) || finalAmount < 0) {
+      console.error('Invalid amount for action:', action, finalAmount);
+      return;
+    }
+    processPlayerAction(currentPlayer.id, action as any, finalAmount);
     setShowRaiseInput(false);
+    setShowBetInput(false);
   };
 
   return (
@@ -73,7 +117,7 @@ export function ActionButtons() {
         {/* Call Button */}
         {validActions.includes('call') && (
           <button
-            onClick={() => handleAction('call')}
+            onClick={() => handleAction('call', callAmount)}
             disabled={isProcessing}
             className="action-button bg-green-600 hover:bg-green-700 text-white"
           >
@@ -83,13 +127,41 @@ export function ActionButtons() {
 
         {/* Bet Button */}
         {validActions.includes('bet') && (
-          <button
-            onClick={() => handleAction('raise')}
-            disabled={isProcessing}
-            className="action-button bg-yellow-600 hover:bg-yellow-700 text-white"
-          >
-            Bet
-          </button>
+          <div className="flex gap-2 items-center">
+            {showBetInput ? (
+              <>
+                <input
+                  type="number"
+                  value={betAmount}
+                  onChange={(e) => setBetAmount(Number(e.target.value))}
+                  min={minBet}
+                  max={currentPlayer.chips}
+                  className="w-24 px-3 py-2 bg-gray-700 text-white rounded border border-gray-600"
+                />
+                <button
+                  onClick={() => handleAction('bet')}
+                  disabled={isProcessing || betAmount < minBet}
+                  className="action-button bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  Bet
+                </button>
+                <button
+                  onClick={() => setShowBetInput(false)}
+                  className="action-button bg-gray-600 hover:bg-gray-700 text-white"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleAction('bet')}
+                disabled={isProcessing}
+                className="action-button bg-yellow-600 hover:bg-yellow-700 text-white"
+              >
+                Bet
+              </button>
+            )}
+          </div>
         )}
 
         {/* Raise Button */}
@@ -134,7 +206,7 @@ export function ActionButtons() {
         {/* All-In Button */}
         {validActions.includes('all-in') && (
           <button
-            onClick={() => handleAction('all-in')}
+            onClick={() => handleAction('all-in', currentPlayer.chips)}
             disabled={isProcessing}
             className="action-button bg-purple-600 hover:bg-purple-700 text-white"
           >
@@ -143,9 +215,18 @@ export function ActionButtons() {
         )}
       </div>
 
+      {/* Helper text for bet input */}
+      {showBetInput && (
+        <div className="mt-2 text-sm text-gray-400">
+          Min bet: ${minBet} | Max: ${currentPlayer.chips}
+        </div>
+      )}
+
+      {/* Helper text for raise input */}
       {showRaiseInput && (
         <div className="mt-2 text-sm text-gray-400">
-          Min raise: ${minRaise} | Max: ${currentPlayer.chips}
+          Min raise: ${minRaise} | Call: ${callAmount} | Total: ${callAmount + raiseAmount} | Max
+          chips: ${currentPlayer.chips}
         </div>
       )}
     </motion.div>

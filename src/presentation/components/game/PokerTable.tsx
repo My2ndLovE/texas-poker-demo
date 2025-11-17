@@ -1,6 +1,6 @@
 import { useGameStore } from '@/state-management/gameStore';
-import { PlayerSeat } from './PlayerSeat';
 import { CommunityCards } from './CommunityCards';
+import { PlayerSeat } from './PlayerSeat';
 import { PotDisplay } from './PotDisplay';
 
 export function PokerTable() {
@@ -38,16 +38,12 @@ export function PokerTable() {
 
       {/* Game Phase Indicator */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 px-6 py-2 rounded-full">
-        <p className="text-white font-bold uppercase tracking-wider">
-          {gameState.phase}
-        </p>
+        <p className="text-white font-bold uppercase tracking-wider">{gameState.phase}</p>
       </div>
 
       {/* Hand Number */}
       <div className="absolute top-4 left-4 bg-black/50 px-4 py-2 rounded-lg">
-        <p className="text-white text-sm">
-          Hand #{gameState.handNumber}
-        </p>
+        <p className="text-white text-sm">Hand #{gameState.handNumber}</p>
       </div>
     </div>
   );

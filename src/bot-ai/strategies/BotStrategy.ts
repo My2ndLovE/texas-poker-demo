@@ -1,6 +1,6 @@
 import { handEvaluator } from '@/game-logic/evaluation/HandEvaluator';
 import { bettingRules } from '@/game-logic/rules/BettingRules';
-import type { Player, GameState, ActionType, Card } from '@/types';
+import type { ActionType, Card, GameState, Player } from '@/types';
 
 export interface BotDecision {
   action: ActionType;
@@ -72,8 +72,10 @@ export class EasyBotStrategy extends BotStrategy {
         return { action: 'bet', amount: gameState.bigBlindAmount * 2 };
       }
       if (validActions.includes('raise')) {
+        const callAmount = bettingRules.getCallAmount(player, gameState);
         const minRaise = bettingRules.getMinimumRaise(gameState);
-        return { action: 'raise', amount: minRaise };
+        // CRITICAL FIX: For raise, pass call amount + raise amount
+        return { action: 'raise', amount: callAmount + minRaise };
       }
     }
 
@@ -116,14 +118,19 @@ export class MediumBotStrategy extends BotStrategy {
 
     // Raise with strong hands (>= 0.7)
     if (handStrength >= 0.7 && validActions.includes('raise')) {
-      const raiseAmount = gameState.pot.totalPot * 0.75;
-      return { action: 'raise', amount: Math.min(raiseAmount, player.chips) };
+      const callAmount = bettingRules.getCallAmount(player, gameState);
+      const raiseSize = gameState.pot.totalPot * 0.75;
+      // CRITICAL FIX: For raise, pass call amount + raise size
+      const totalAmount = callAmount + raiseSize;
+      return { action: 'raise', amount: Math.min(totalAmount, player.chips) };
     }
 
     // Occasionally bluff (10% of time)
     if (Math.random() < 0.1 && validActions.includes('raise')) {
-      const bluffAmount = gameState.bigBlindAmount * 3;
-      return { action: 'raise', amount: bluffAmount };
+      const callAmount = bettingRules.getCallAmount(player, gameState);
+      const bluffSize = gameState.bigBlindAmount * 3;
+      // CRITICAL FIX: For raise, pass call amount + bluff size
+      return { action: 'raise', amount: callAmount + bluffSize };
     }
 
     // Default: fold
@@ -198,6 +205,8 @@ export class HardBotStrategy extends BotStrategy {
 
     // Strategic raising
     if (handStrength >= raiseThreshold && validActions.includes('raise')) {
+      const callAmount = bettingRules.getCallAmount(player, gameState);
+
       // Vary bet sizing based on hand strength and situation
       let raiseFactor = 0.5 + handStrength * 0.5;
       if (gameState.communityCards.length === 0) {
@@ -205,8 +214,10 @@ export class HardBotStrategy extends BotStrategy {
         raiseFactor *= 0.5;
       }
 
-      const raiseAmount = gameState.pot.totalPot * raiseFactor * (1 + personality.aggression * 0.5);
-      return { action: 'raise', amount: Math.min(raiseAmount, player.chips) };
+      const raiseSize = gameState.pot.totalPot * raiseFactor * (1 + personality.aggression * 0.5);
+      // CRITICAL FIX: For raise, pass call amount + raise size
+      const totalAmount = callAmount + raiseSize;
+      return { action: 'raise', amount: Math.min(totalAmount, player.chips) };
     }
 
     // Strategic bluffing
@@ -215,8 +226,11 @@ export class HardBotStrategy extends BotStrategy {
       gameState.communityCards.length >= 3 &&
       validActions.includes('raise')
     ) {
+      const callAmount = bettingRules.getCallAmount(player, gameState);
       const bluffSize = gameState.pot.totalPot * 0.8;
-      return { action: 'raise', amount: Math.min(bluffSize, player.chips) };
+      // CRITICAL FIX: For raise, pass call amount + bluff size
+      const totalAmount = callAmount + bluffSize;
+      return { action: 'raise', amount: Math.min(totalAmount, player.chips) };
     }
 
     // Default: fold

@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { GameEngine } from '@/game-logic/engine/GameEngine';
 import { createBotStrategy } from '@/bot-ai/strategies/BotStrategy';
-import type { GameState, GameSettings, ActionType } from '@/types';
+import { GameEngine } from '@/game-logic/engine/GameEngine';
+import type { ActionType, GameSettings, GameState } from '@/types';
+import { create } from 'zustand';
 
 interface GameStore {
   // State
@@ -22,7 +22,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gameState: null,
   isProcessingAction: false,
 
-  initializeGame: (settings: GameSettings, playerName: string = 'You') => {
+  initializeGame: (settings: GameSettings, playerName = 'You') => {
     const engine = new GameEngine();
     engine.initializeGame(settings, playerName);
 
@@ -37,13 +37,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }, 1000);
   },
 
-  processPlayerAction: (playerId: string, action: ActionType, amount: number = 0) => {
+  processPlayerAction: (playerId: string, action: ActionType, amount = 0) => {
     const { gameEngine } = get();
-    if (!gameEngine) return;
+    if (!gameEngine) {
+      console.error('Game engine not initialized');
+      return;
+    }
 
     set({ isProcessingAction: true });
 
     try {
+      // Validate amount is non-negative
+      if (amount < 0) {
+        throw new Error(`Invalid amount: ${amount}. Amount must be non-negative.`);
+      }
+
       gameEngine.processAction(playerId, action, amount);
       set({ gameState: gameEngine.getState() as GameState });
 
@@ -53,6 +61,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }, 500);
     } catch (error) {
       console.error('Error processing action:', error);
+      // Show error to user (in production, this should use a toast/notification)
+      if (error instanceof Error) {
+        alert(`Action failed: ${error.message}`);
+      } else {
+        alert('An unexpected error occurred. Please try again.');
+      }
     } finally {
       set({ isProcessingAction: false });
     }

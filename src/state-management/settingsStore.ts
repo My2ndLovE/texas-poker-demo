@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import type { GameSettings } from '@/types';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface SettingsStore extends GameSettings {
   updateSettings: (settings: Partial<GameSettings>) => void;
@@ -41,6 +41,6 @@ export const useSettingsStore = create<SettingsStore>()(
     {
       name: 'poker-game-settings',
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );

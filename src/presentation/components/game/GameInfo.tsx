@@ -1,5 +1,5 @@
 import { useGameStore } from '@/state-management/gameStore';
-import { Settings, RotateCcw } from 'lucide-react';
+import { RotateCcw, Settings } from 'lucide-react';
 
 export function GameInfo() {
   const gameState = useGameStore((state) => state.gameState);
@@ -19,6 +19,7 @@ export function GameInfo() {
       <div className="flex gap-4">
         {gameState.phase === 'hand-complete' && (
           <button
+            type="button"
             onClick={startNewHand}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
           >
@@ -28,6 +29,7 @@ export function GameInfo() {
         )}
 
         <button
+          type="button"
           className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
         >
           <Settings className="w-4 h-4" />

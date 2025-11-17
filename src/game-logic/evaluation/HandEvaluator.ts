@@ -1,5 +1,5 @@
+import type { Card, HandRank, HandResult } from '@/types';
 import { Hand } from 'pokersolver';
-import type { Card, HandResult, HandRank } from '@/types';
 
 /**
  * HandEvaluator wraps the pokersolver library to evaluate poker hands

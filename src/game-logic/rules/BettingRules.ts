@@ -1,4 +1,4 @@
-import type { Player, GameState, ActionType } from '@/types';
+import type { ActionType, GameState, Player } from '@/types';
 
 export interface BettingAction {
   type: ActionType;
@@ -66,11 +66,7 @@ export class BettingRules {
   /**
    * Validate a player action
    */
-  validateAction(
-    player: Player,
-    action: BettingAction,
-    gameState: GameState
-  ): ValidationResult {
+  validateAction(player: Player, action: BettingAction, gameState: GameState): ValidationResult {
     if (!this.canPlayerAct(player)) {
       return {
         isValid: false,
@@ -139,11 +135,7 @@ export class BettingRules {
   /**
    * Validate a bet action
    */
-  private validateBet(
-    player: Player,
-    amount: number,
-    gameState: GameState
-  ): ValidationResult {
+  private validateBet(player: Player, amount: number, gameState: GameState): ValidationResult {
     const currentBet = this.getCurrentBet(gameState);
 
     if (currentBet > 0) {
@@ -175,11 +167,7 @@ export class BettingRules {
   /**
    * Validate a raise action
    */
-  private validateRaise(
-    player: Player,
-    amount: number,
-    gameState: GameState
-  ): ValidationResult {
+  private validateRaise(player: Player, amount: number, gameState: GameState): ValidationResult {
     const currentBet = this.getCurrentBet(gameState);
 
     if (currentBet === 0) {
@@ -270,7 +258,7 @@ export class BettingRules {
    */
   isBettingRoundComplete(gameState: GameState): boolean {
     const activePlayers = gameState.players.filter(
-      (p) => p.status === 'active' || p.status === 'all-in'
+      (p) => p.status === 'active' || p.status === 'all-in',
     );
 
     if (activePlayers.length <= 1) {

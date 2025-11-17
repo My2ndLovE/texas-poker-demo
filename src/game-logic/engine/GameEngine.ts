@@ -1,16 +1,16 @@
+import type {
+  ActionType,
+  GamePhase,
+  GameSettings,
+  GameState,
+  Player,
+  PlayerAction,
+  PlayerType,
+} from '@/types';
 import { Deck } from '../deck/Deck';
 import { handEvaluator } from '../evaluation/HandEvaluator';
 import { potCalculator } from '../pot/PotCalculator';
 import { bettingRules } from '../rules/BettingRules';
-import type {
-  GameState,
-  Player,
-  GamePhase,
-  PlayerAction,
-  ActionType,
-  GameSettings,
-  PlayerType,
-} from '@/types';
 
 /**
  * GameEngine manages the complete poker game state and logic
@@ -27,7 +27,7 @@ export class GameEngine {
   /**
    * Initialize a new game with settings
    */
-  initializeGame(settings: GameSettings, humanPlayerName: string = 'You'): void {
+  initializeGame(settings: GameSettings, humanPlayerName = 'You'): void {
     const players = this.createPlayers(settings, humanPlayerName);
 
     this.state = {
@@ -100,7 +100,7 @@ export class GameEngine {
   /**
    * Process a player action
    */
-  processAction(playerId: string, actionType: ActionType, amount: number = 0): void {
+  processAction(playerId: string, actionType: ActionType, amount = 0): void {
     const player = this.state.players.find((p) => p.id === playerId);
     if (!player) {
       throw new Error(`Player not found: ${playerId}`);
@@ -110,7 +110,7 @@ export class GameEngine {
     const validation = bettingRules.validateAction(
       player,
       { type: actionType, amount },
-      this.state
+      this.state,
     );
 
     if (!validation.isValid) {
@@ -238,7 +238,7 @@ export class GameEngine {
    */
   private isBettingRoundComplete(): boolean {
     const activePlayers = this.state.players.filter(
-      (p) => p.status === 'active' || p.status === 'all-in'
+      (p) => p.status === 'active' || p.status === 'all-in',
     );
 
     if (activePlayers.length === 1) {
@@ -337,13 +337,16 @@ export class GameEngine {
     }));
 
     // Distribute main pot
-    const mainPotData = { amount: this.state.pot.mainPot, eligiblePlayerIds: activePlayers.map(p => p.id) };
+    const mainPotData = {
+      amount: this.state.pot.mainPot,
+      eligiblePlayerIds: activePlayers.map((p) => p.id),
+    };
     const mainWinners = handEvaluator.findWinners(hands);
     const mainDistribution = potCalculator.distributePot(
       mainPotData,
       mainWinners,
       this.state.dealerIndex,
-      this.state.players
+      this.state.players,
     );
 
     // Apply main pot winnings
@@ -360,7 +363,7 @@ export class GameEngine {
         sidePot,
         sideWinners,
         this.state.dealerIndex,
-        this.state.players
+        this.state.players,
       );
 
       for (const [playerId, amount] of sideDistribution.entries()) {

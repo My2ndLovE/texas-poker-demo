@@ -17,9 +17,7 @@ export function PotDisplay({ pot }: PotDisplayProps) {
         <Coins className="w-6 h-6 text-yellow-400" />
         <div className="text-center">
           <p className="text-xs text-gray-400 uppercase">Pot</p>
-          <p className="text-2xl font-bold text-yellow-400">
-            ${pot.totalPot.toLocaleString()}
-          </p>
+          <p className="text-2xl font-bold text-yellow-400">${pot.totalPot.toLocaleString()}</p>
         </div>
       </div>
 
