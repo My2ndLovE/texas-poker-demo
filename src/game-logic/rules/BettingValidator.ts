@@ -35,7 +35,6 @@ export class BettingValidator {
    */
   validateAction(action: BettingAction, context: BettingContext): ValidationResult {
     const { type, amount } = action
-    const { currentBet, playerChips, playerCurrentBet, minRaise } = context
 
     switch (type) {
       case 'fold':
@@ -82,7 +81,7 @@ export class BettingValidator {
    * Validate call action
    */
   private validateCall(context: BettingContext): ValidationResult {
-    const { currentBet, playerChips, playerCurrentBet } = context
+    const { playerChips } = context
 
     const callAmount = this.calculateCallAmount(context)
 
@@ -130,14 +129,13 @@ export class BettingValidator {
     amount: number | undefined,
     context: BettingContext
   ): ValidationResult {
-    const { currentBet, playerChips, playerCurrentBet, minRaise } = context
+    const { playerChips, minRaise } = context
 
     if (amount === undefined) {
       return { isValid: false, error: 'Raise amount required' }
     }
 
     const minRaiseAmount = this.calculateMinRaise(context)
-    const callAmount = currentBet - playerCurrentBet
     const totalNeeded = amount
 
     // Check if player has enough chips

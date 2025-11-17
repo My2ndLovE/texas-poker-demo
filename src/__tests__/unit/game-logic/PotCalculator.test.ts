@@ -1,4 +1,4 @@
-import { PotCalculator, Pot, PlayerContribution } from '../../../game-logic/pot-calculation/PotCalculator'
+import { PotCalculator, PlayerContribution } from '../../../game-logic/pot-calculation/PotCalculator'
 
 describe('PotCalculator', () => {
   let calculator: PotCalculator

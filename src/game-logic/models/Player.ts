@@ -19,8 +19,8 @@ export type BotDifficulty = 'easy' | 'medium' | 'hard'
  * Options for creating a player
  */
 export interface PlayerOptions {
-  isBot?: boolean
-  difficulty?: BotDifficulty
+  isBot?: boolean | undefined
+  difficulty?: BotDifficulty | undefined
 }
 
 /**
@@ -45,10 +45,10 @@ export class Player {
 
   // Bot state
   isBot: boolean
-  botDifficulty?: BotDifficulty
+  botDifficulty?: BotDifficulty | undefined
 
   // Action history for current hand
-  actionHistory: { action: PlayerAction; amount?: number; round?: string }[]
+  actionHistory: { action: PlayerAction; amount?: number | undefined; round?: string | undefined }[]
 
   constructor(id: string, name: string, chips: number, options?: PlayerOptions) {
     this.id = id

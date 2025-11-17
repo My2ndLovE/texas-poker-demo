@@ -1,4 +1,4 @@
-import { BettingValidator, BettingAction, BettingContext } from '../../../game-logic/rules/BettingValidator'
+import { BettingValidator, BettingContext } from '../../../game-logic/rules/BettingValidator'
 
 describe('BettingValidator', () => {
   let validator: BettingValidator

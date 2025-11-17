@@ -1,32 +1,156 @@
-import { useState } from 'react'
+import { useEffect } from 'react'
+import { useGameStore } from './store/gameStore'
+import { PokerTable } from './components/poker-table/PokerTable'
+import { ActionButtons } from './components/actions/ActionButtons'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const {
+    players,
+    humanPlayerId,
+    gamePhase,
+    communityCards,
+    potAmount,
+    dealerIndex,
+    initializeGame,
+    playerAction,
+    getCurrentPlayer,
+    getValidActions,
+    calculateCallAmount,
+    calculateMinRaise,
+    startNewHand,
+  } = useGameStore()
+
+  // Initialize game on mount
+  useEffect(() => {
+    if (players.length === 0) {
+      initializeGame(6)
+    }
+  }, [])
+
+  const currentPlayer = getCurrentPlayer()
+  const isHumanTurn = currentPlayer?.id === humanPlayerId
+  const humanPlayer = players.find((p) => p.id === humanPlayerId)
+
+  const handleAction = (action: string, amount?: number) => {
+    playerAction(action, amount)
+  }
+
+  if (players.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
+        <div className="text-white text-2xl">Initializing game...</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-4">Texas Hold'em Poker</h1>
-        <p className="text-xl mb-8">Single-player poker game with AI opponents</p>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+      {/* Header */}
+      <header className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Texas Hold'em Poker</h1>
+            <p className="text-gray-400 text-sm">Professional Poker Experience</p>
+          </div>
 
-        <div className="bg-gray-700 rounded-lg p-6 max-w-md mx-auto">
-          <h2 className="text-2xl mb-4">Development Setup</h2>
-          <button
-            onClick={() => setCount((count) => count + 1)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
-          >
-            Count is {count}
-          </button>
-          <p className="mt-4 text-gray-300">
-            Project initialized successfully!
-          </p>
-        </div>
+          <div className="flex gap-4 items-center">
+            {/* Game stats */}
+            {humanPlayer && (
+              <div className="bg-gray-800 rounded-lg px-4 py-2 border border-gray-700">
+                <div className="text-gray-400 text-xs">Your Chips</div>
+                <div className="text-yellow-400 text-xl font-bold">
+                  ${humanPlayer.chips.toLocaleString()}
+                </div>
+              </div>
+            )}
 
-        <div className="mt-8 text-sm text-gray-400">
-          <p>Phase 1: Foundation & Setup - In Progress</p>
-          <p>pokersolver | React 18 | TypeScript | Tailwind CSS | Zustand</p>
+            {/* New hand button */}
+            <button
+              onClick={() => startNewHand()}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2 rounded-lg transition-colors"
+            >
+              New Hand
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {/* Main game area */}
+      <main className="container mx-auto px-4 py-8">
+        <PokerTable
+          players={players}
+          communityCards={communityCards}
+          potAmount={potAmount}
+          currentPlayerId={currentPlayer?.id}
+          humanPlayerId={humanPlayerId}
+          gamePhase={gamePhase}
+        />
+
+        {/* Action buttons (only shown when it's human player's turn) */}
+        {isHumanTurn && gamePhase !== 'handComplete' && gamePhase !== 'showdown' && (
+          <div className="mt-8 max-w-2xl mx-auto">
+            <div className="mb-4 text-center">
+              <div className="inline-block bg-yellow-500 text-gray-900 px-6 py-2 rounded-full font-bold text-lg animate-pulse">
+                Your Turn
+              </div>
+            </div>
+
+            <ActionButtons
+              validActions={getValidActions()}
+              onAction={handleAction}
+              callAmount={calculateCallAmount()}
+              minRaise={calculateMinRaise()}
+              maxRaise={humanPlayer?.chips || 0}
+              potSize={potAmount}
+            />
+          </div>
+        )}
+
+        {/* Waiting message */}
+        {!isHumanTurn && gamePhase !== 'handComplete' && gamePhase !== 'showdown' && (
+          <div className="mt-8 text-center">
+            <div className="inline-block bg-gray-800/90 backdrop-blur-sm px-8 py-4 rounded-lg border border-gray-700">
+              <div className="text-gray-400 text-sm mb-1">Waiting for</div>
+              <div className="text-white text-xl font-semibold">
+                {currentPlayer?.name || 'Player'}
+              </div>
+              <div className="mt-2">
+                <div className="inline-block w-2 h-2 bg-yellow-400 rounded-full animate-pulse mr-2"></div>
+                <span className="text-gray-500 text-sm">Thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hand complete message */}
+        {gamePhase === 'handComplete' && (
+          <div className="mt-8 text-center">
+            <div className="inline-block bg-green-600 px-8 py-4 rounded-lg border border-green-500 shadow-xl">
+              <div className="text-white text-2xl font-bold mb-2">Hand Complete!</div>
+              <button
+                onClick={() => startNewHand()}
+                className="bg-white text-green-600 font-bold px-6 py-2 rounded-lg hover:bg-gray-100 transition-colors mt-2"
+              >
+                Next Hand
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-900/50 border-t border-gray-800 px-6 py-4 mt-8">
+        <div className="max-w-7xl mx-auto flex justify-between items-center text-sm text-gray-500">
+          <div>
+            <span className="mr-4">Dealer Position: Seat {dealerIndex + 1}</span>
+            <span className="mr-4">Phase: {gamePhase}</span>
+            <span>Players: {players.filter((p) => p.status !== 'eliminated').length}</span>
+          </div>
+          <div className="text-gray-600">
+            pokersolver | React 18 | TypeScript | Tailwind CSS | Zustand
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -19,8 +19,6 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -28,7 +26,6 @@ body {
 #root {
   width: 100%;
   margin: 0 auto;
-  text-align: center;
 }
 
 @media (prefers-color-scheme: light) {
@@ -53,4 +50,44 @@ body {
   .chip {
     @apply rounded-full shadow-md;
   }
+}
+
+/* Custom range slider */
+input[type='range'].slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type='range'].slider::-webkit-slider-track {
+  background-color: #374151;
+  border-radius: 0.5rem;
+  height: 0.5rem;
+}
+
+input[type='range'].slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #eab308;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  margin-top: -0.5rem;
+}
+
+input[type='range'].slider::-moz-range-track {
+  background-color: #374151;
+  border-radius: 0.5rem;
+  height: 0.5rem;
+}
+
+input[type='range'].slider::-moz-range-thumb {
+  background-color: #eab308;
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  border: none;
 }

@@ -1,4 +1,4 @@
-import { Player, PlayerStatus, PlayerAction } from '../../../game-logic/models/Player'
+import { Player } from '../../../game-logic/models/Player'
 import { Card, Rank, Suit } from '../../../game-logic/models/Card'
 
 describe('Player', () => {
