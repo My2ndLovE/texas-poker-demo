@@ -208,12 +208,42 @@ describe('Poker State Machine', () => {
   });
 
   describe('Community Card Dealing', () => {
+    // Helper to complete a betting round by having all players check/call
+    function completeBettingRound() {
+      const context = actor.getSnapshot().context;
+      const activePlayers = context.players.filter((p) => !p.isFolded && !p.isAllIn);
+
+      // Have each active player check or call
+      for (let i = 0; i < activePlayers.length; i++) {
+        const currentContext = actor.getSnapshot().context;
+        const currentPlayer = currentContext.players[currentContext.currentPlayerIndex];
+
+        if (!currentPlayer || currentPlayer.isFolded || currentPlayer.isAllIn) continue;
+
+        const currentBet = Math.max(...currentContext.players.map((p) => p.currentBet));
+        const callAmount = currentBet - currentPlayer.currentBet;
+
+        if (callAmount === 0) {
+          actor.send({
+            type: 'PLAYER_ACTION',
+            action: { type: 'check', playerId: currentPlayer.id, amount: 0, timestamp: Date.now() },
+          });
+        } else {
+          actor.send({
+            type: 'PLAYER_ACTION',
+            action: { type: 'call', playerId: currentPlayer.id, amount: callAmount, timestamp: Date.now() },
+          });
+        }
+      }
+    }
+
     beforeEach(() => {
       actor.send({ type: 'START_GAME', settings: defaultSettings });
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to preflop
     });
 
     it('should deal 3 cards for flop', () => {
+      completeBettingRound(); // Complete preflop
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to flop
       const context = actor.getSnapshot().context;
 
@@ -221,7 +251,9 @@ describe('Poker State Machine', () => {
     });
 
     it('should deal 1 card for turn', () => {
+      completeBettingRound(); // Complete preflop
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to flop
+      completeBettingRound(); // Complete flop betting
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to turn
       const context = actor.getSnapshot().context;
 
@@ -229,8 +261,11 @@ describe('Poker State Machine', () => {
     });
 
     it('should deal 1 card for river', () => {
+      completeBettingRound(); // Complete preflop
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to flop
+      completeBettingRound(); // Complete flop betting
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to turn
+      completeBettingRound(); // Complete turn betting
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to river
       const context = actor.getSnapshot().context;
 
@@ -238,14 +273,17 @@ describe('Poker State Machine', () => {
     });
 
     it('should burn cards before dealing community cards', () => {
+      completeBettingRound(); // Complete preflop
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to flop (burns 1)
       let context = actor.getSnapshot().context;
       expect(context.burnedCards).toHaveLength(1);
 
+      completeBettingRound(); // Complete flop betting
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to turn (burns 1)
       context = actor.getSnapshot().context;
       expect(context.burnedCards).toHaveLength(2);
 
+      completeBettingRound(); // Complete turn betting
       actor.send({ type: 'ADVANCE_PHASE' }); // Go to river (burns 1)
       context = actor.getSnapshot().context;
       expect(context.burnedCards).toHaveLength(3);

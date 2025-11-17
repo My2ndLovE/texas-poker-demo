@@ -7,7 +7,7 @@ import { createMachine, assign } from 'xstate';
 import type { PokerContext, PokerEvent, Player } from '@/types';
 import { createDeck, shuffleDeck, cardToPokersolverFormat } from '@/utils/deck';
 import { createPlayer } from '@/utils/player';
-import PokerSolver from 'pokersolver';
+import Hand from 'pokersolver';
 
 // ============================================================================
 // Initial Context
@@ -497,7 +497,7 @@ export const pokerMachine = createMachine(
         activePlayers.forEach((player) => {
           const holeCardsStr = player.holeCards.map(cardToPokersolverFormat);
           const allCards = [...holeCardsStr, ...communityCardsStr];
-          PokerSolver.solve(allCards);
+          Hand.solve(allCards);
         });
 
         // Store hand evaluations for display (optional - could add to context)
@@ -534,13 +534,13 @@ export const pokerMachine = createMachine(
           const allCards = [...holeCardsStr, ...communityCardsStr];
           return {
             player,
-            hand: PokerSolver.solve(allCards),
+            hand: Hand.solve(allCards),
           };
         });
 
         // Determine winners
         const hands = playerHands.map((ph) => ph.hand);
-        const winningHands = PokerSolver.winners(hands);
+        const winningHands = Hand.winners(hands);
 
         // Find players with winning hands
         const winners = playerHands.filter((ph) => winningHands.includes(ph.hand));

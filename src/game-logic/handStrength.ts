@@ -3,7 +3,7 @@
  * Calculates the strength of a poker hand (0.0 to 1.0)
  */
 
-import PokerSolver from 'pokersolver';
+import Hand from 'pokersolver';
 import { cardToPokersolverFormat } from '@/utils/deck';
 import type { Card } from '@/types';
 
@@ -26,7 +26,7 @@ export function calculateHandStrength(
   // Need at least 2 cards to evaluate
   if (allCards.length < 2) return 0;
 
-  const hand = PokerSolver.solve(allCards);
+  const hand = Hand.solve(allCards);
 
   // Hand rank mapping (0-9, where 9 is royal flush)
   // Convert to 0-1 scale with weighting
