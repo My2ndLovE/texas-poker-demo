@@ -21,34 +21,39 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 
 ### Technology Stack
 
-**Frontend Framework**: React 18.2+
+**Frontend Framework**: React 18.3+
 - **Why**: Component-based architecture perfect for complex UI (poker table, cards, actions)
 - **Hooks**: useState, useEffect, useReducer for component state
 - **Performance**: React.memo, useMemo, useCallback for optimization
-- **Styling**: Tailwind CSS for utility-first design, custom CSS for animations
+- **Version**: Latest stable with concurrent features and improved performance
 
-**Language**: TypeScript 5.x (Strict Mode)
+**Language**: TypeScript 5.7+
 - **Why**: Type safety critical for poker logic correctness
 - **Strict**: No `any` types, complete type coverage
+- **Features**: Latest type inference, satisfies operator, const type parameters
 - **Interfaces**: Strong typing for game state, actions, bot decisions
 - **Generics**: Reusable utility functions with type safety
 
-**State Management**: Zustand 4.x
-- **Why**: Simpler than Redux, perfect for client-side state
+**State Management**: Zustand 5.x
+- **Why**: Simpler than Redux, perfect for client-side state, minimal boilerplate
 - **Stores**: Separate stores for game state, UI state, settings
 - **Immer**: Built-in support for immutable state updates
 - **DevTools**: Redux DevTools integration for debugging
+- **Middleware**: Persist middleware for localStorage sync
 
-**Build Tool**: Vite 5.x
-- **Why**: Fast development server (<100ms HMR), optimized production builds
-- **Features**: ES modules, code-splitting, tree-shaking, minification
+**Build Tool**: Vite 6.x
+- **Why**: Fastest dev server (<50ms HMR), optimized production builds
+- **Features**: Lightning-fast ES modules, code-splitting, tree-shaking, minification
 - **Plugins**: TypeScript, React, PostCSS (for Tailwind)
+- **Performance**: Sub-second cold starts, instant hot reloads
 
-**Testing Framework**: Jest 29.x + React Testing Library
+**Testing Framework**: Vitest + React Testing Library + Playwright
+- **Vitest**: Modern test runner (2-10x faster than Jest), native Vite integration, ESM support
 - **Unit Tests**: Game logic (hand evaluation, pot calculation, bot AI)
-- **Component Tests**: UI components (buttons, cards, table layout)
-- **Integration Tests**: Full game flows (complete hands, multiple scenarios)
+- **Component Tests**: UI components with @testing-library/react
+- **E2E Tests**: Playwright for end-to-end user flows (complete games)
 - **Coverage**: Target 80% for game logic, 60% for UI
+- **Why Vitest**: Same config as Vite, instant watch mode, native TypeScript
 
 **Hand Evaluation Library**: poker-evaluator (https://github.com/Sukhmai/poker-evaluator)
 - **Why**: Actively maintained (last update Aug 2025), native TypeScript support (89.5%)
@@ -58,15 +63,87 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 - **Maintenance**: Fork of original poker-evaluator, actively maintained with 2024-2025 updates
 - **Bundle Size**: Efficient lookup table approach, includes HandRanks.dat
 
+**UI Framework**: shadcn/ui + TailwindCSS 4.x
+- **shadcn/ui**: Copy-paste accessible components (Button, Dialog, Slider, Toast)
+- **Why shadcn**: Own your components, fully customizable, built on Radix UI primitives
+- **TailwindCSS 4**: Latest version with native CSS, better performance, smaller builds
+- **Accessibility**: WCAG 2.1 Level AA compliant out of the box
+- **Saves Time**: No need to build Button, Modal, Slider from scratch
+
+**Animation Library**: Framer Motion 12.x
+- **Why**: Declarative animations, spring physics, gesture support
+- **Performance**: GPU-accelerated, 60fps animations
+- **Features**: Variants for sequencing, layout animations, exit animations
+- **Better than CSS**: Simpler API, TypeScript support, better control
+- **Use Cases**: Card dealing, chip sliding, winner celebrations, smooth transitions
+
 **Icons**: Lucide React
-- **Why**: Professional, tree-shakeable, 1000+ icons
+- **Why**: Professional, tree-shakeable, 1400+ icons, TypeScript support
 - **Usage**: Suits (♠ ♥ ♦ ♣), actions (fold, raise, all-in), UI (settings, stats)
 - **No Emojis**: Professional appearance, consistent design
+- **Bundle Size**: Only imports icons you use (tree-shakeable)
 
-**Localization**: react-i18next
+**Validation**: Zod
+- **Why**: TypeScript-first schema validation, runtime safety
+- **Use Cases**: Settings validation, game state validation, user input validation
+- **Features**: Type inference (TypeScript types from schemas), composable schemas
+- **Integration**: Works perfectly with React Hook Form for settings
+
+**Form Management**: React Hook Form
+- **Why**: Performant, minimal re-renders, built-in validation
+- **Use Cases**: Settings panel, raise amount input, game configuration
+- **Integration**: Works with Zod for schema validation
+- **Better than**: Controlled components (fewer re-renders)
+
+**Code Quality**: Biome
+- **Why**: All-in-one linter + formatter (replaces ESLint + Prettier)
+- **Performance**: 97% faster than ESLint, written in Rust
+- **Features**: Linting, formatting, import sorting - all in one tool
+- **Config**: Single biome.json file, zero config to start
+- **Migration**: Can migrate from ESLint/Prettier config automatically
+
+**Package Manager**: pnpm
+- **Why**: 2-3x faster than npm, disk space efficient (hard links)
+- **Features**: Strict dependency resolution, monorepo support
+- **Security**: Better than npm/yarn (no phantom dependencies)
+- **Disk**: Saves gigabytes with shared dependency store
+
+**Localization**: react-i18next (optional for MVP)
 - **Why**: Industry standard, supports plural forms, interpolation
-- **Setup**: English default, infrastructure ready for Vietnamese, Thai, Chinese
+- **Setup**: English default, infrastructure ready for future languages
 - **Keys**: No hardcoded strings, all text via t('key') function
+- **MVP**: Can defer full implementation until post-launch
+
+---
+
+### Key Tech Stack Improvements
+
+**Why This Stack is Better:**
+
+1. **Vitest vs Jest**: 2-10x faster test execution, native Vite integration, instant watch mode, same config as build tool
+2. **Biome vs ESLint+Prettier**: 97% faster linting/formatting, single tool instead of two, zero config to start, written in Rust
+3. **pnpm vs npm**: 2-3x faster installs, saves gigabytes of disk space, stricter dependency resolution prevents bugs
+4. **shadcn/ui**: Production-ready accessible components, saves 20+ hours of UI development, fully customizable
+5. **Framer Motion**: Declarative animations, easier to maintain than CSS keyframes, TypeScript support, better orchestration
+6. **Vite 6**: Faster than Vite 5, sub-second cold starts, <50ms HMR, improved code-splitting
+7. **Zod + React Hook Form**: Runtime validation prevents bugs, better UX, type-safe forms
+8. **TailwindCSS 4**: Native CSS support, smaller builds, better performance than v3
+9. **Playwright**: Most reliable E2E testing, better than Cypress for modern apps, built-in test automation
+10. **TypeScript 5.7**: Latest type inference improvements, better error messages, const type parameters
+
+**Time Savings:**
+- shadcn/ui components: **~20 hours** (no need to build Button, Modal, Slider from scratch)
+- Framer Motion: **~10 hours** (simpler than managing CSS animations and timing)
+- Vitest: **~5 hours** (faster test feedback loop across development)
+- Biome: **~3 hours** (one tool instead of configuring ESLint + Prettier)
+- **Total saved: ~38 hours** (~20% of total project time)
+
+**Developer Experience:**
+- Faster feedback loops (Vitest, Vite 6, pnpm)
+- Less configuration (Biome, shadcn/ui, Vitest)
+- Better type safety (Zod, TypeScript 5.7)
+- Easier animations (Framer Motion vs CSS keyframes)
+- Modern best practices (all latest stable versions)
 
 ---
 
@@ -92,12 +169,14 @@ standalone-poker-game/
 │   │   │   │   ├── PlayingCard.tsx    # Single card component
 │   │   │   │   ├── CardBack.tsx       # Face-down card
 │   │   │   │   └── CardFront.tsx      # Face-up card with suit/rank
-│   │   │   ├── ui/                    # Reusable UI primitives
-│   │   │   │   ├── Button.tsx         # Styled button
-│   │   │   │   ├── Modal.tsx          # Dialog overlay
-│   │   │   │   ├── Slider.tsx         # Range input
-│   │   │   │   ├── Tooltip.tsx        # Hover tooltip
-│   │   │   │   └── Toast.tsx          # Notification system
+│   │   │   ├── ui/                    # shadcn/ui components (generated)
+│   │   │   │   ├── button.tsx         # Accessible button (from shadcn)
+│   │   │   │   ├── dialog.tsx         # Modal dialog (from shadcn)
+│   │   │   │   ├── slider.tsx         # Range input (from shadcn)
+│   │   │   │   ├── tooltip.tsx        # Hover tooltip (from shadcn)
+│   │   │   │   ├── toast.tsx          # Notification system (from shadcn)
+│   │   │   │   ├── form.tsx           # Form components (from shadcn)
+│   │   │   │   └── card.tsx           # Card container (from shadcn)
 │   │   │   └── layout/
 │   │   │       ├── MainMenu.tsx       # Start screen
 │   │   │       ├── SettingsPanel.tsx  # Game settings
@@ -547,83 +626,158 @@ interface UIState {
 
 ### 0.5 Animation Strategy
 
-**Approach**: CSS keyframe animations + React state transitions
+**Approach**: Framer Motion for declarative, GPU-accelerated animations
 
-**Card Dealing Animation**:
-```css
-/* src/presentation/styles/animations.css */
-@keyframes card-deal {
-  0% {
-    transform: translate(0, 0) scale(0.5);
-    opacity: 0;
-  }
-  50% {
-    transform: translate(var(--card-x), var(--card-y)) scale(0.8);
-    opacity: 0.5;
-  }
-  100% {
-    transform: translate(var(--card-x), var(--card-y)) scale(1);
-    opacity: 1;
-  }
-}
-
-.card-dealing {
-  animation: card-deal 0.5s ease-out forwards;
-}
-```
-
-**Chip Movement**:
-```css
-@keyframes chip-slide {
-  0% {
-    transform: translate(var(--start-x), var(--start-y));
-  }
-  100% {
-    transform: translate(var(--end-x), var(--end-y));
-  }
-}
-
-.chip-sliding {
-  animation: chip-slide 0.4s ease-in-out forwards;
-}
-```
-
-**React Integration**:
+**Card Dealing Animation** (Framer Motion):
 ```typescript
-// src/presentation/components/game/CommunityCards.tsx
-const CommunityCards: React.FC = () => {
-  const { communityCards, gamePhase } = useGameStore();
-  const [animatingCards, setAnimatingCards] = useState<Card[]>([]);
+// src/presentation/components/cards/PlayingCard.tsx
+import { motion } from 'framer-motion';
 
-  useEffect(() => {
-    if (gamePhase === 'flop' && communityCards.length === 3) {
-      // Trigger flop animation
-      setAnimatingCards(communityCards.slice(0, 3));
-      setTimeout(() => setAnimatingCards([]), 500);
-    }
-  }, [gamePhase, communityCards]);
-
+const PlayingCard: React.FC<{ card: Card; position: Position }> = ({ card, position }) => {
   return (
-    <div className="community-cards">
-      {communityCards.map((card, i) => (
-        <PlayingCard
-          key={i}
-          card={card}
-          className={animatingCards.includes(card) ? 'card-dealing' : ''}
-        />
-      ))}
-    </div>
+    <motion.div
+      initial={{ scale: 0.5, opacity: 0, x: 0, y: 0 }}
+      animate={{ scale: 1, opacity: 1, x: position.x, y: position.y }}
+      transition={{
+        duration: 0.5,
+        ease: [0.34, 1.56, 0.64, 1], // Custom spring-like easing
+        type: "spring",
+        stiffness: 260,
+        damping: 20
+      }}
+      className="playing-card"
+    >
+      {/* Card content */}
+    </motion.div>
   );
 };
 ```
 
-**Animation Settings**:
-- **Off**: No animations, instant updates
-- **Fast**: 0.2s duration (50% of normal)
-- **Normal**: 0.4-0.5s duration
-- **Slow**: 0.8-1s duration (2x normal)
+**Chip Movement** (Framer Motion):
+```typescript
+// src/presentation/components/game/ChipStack.tsx
+import { motion } from 'framer-motion';
 
-**Performance**: Use `will-change` CSS property, `transform` (GPU-accelerated), avoid layout thrashing
+const ChipStack: React.FC<{ amount: number; targetPosition: Position }> = ({ amount, targetPosition }) => {
+  return (
+    <motion.div
+      initial={{ x: 0, y: 0 }}
+      animate={{ x: targetPosition.x, y: targetPosition.y }}
+      transition={{
+        duration: 0.4,
+        ease: "easeInOut"
+      }}
+      className="chip-stack"
+    >
+      {/* Chip graphics */}
+    </motion.div>
+  );
+};
+```
+
+**Sequential Animations** (Dealing to multiple players):
+```typescript
+// src/presentation/components/game/CommunityCards.tsx
+import { motion, AnimatePresence } from 'framer-motion';
+
+const CommunityCards: React.FC = () => {
+  const { communityCards, gamePhase } = useGameStore();
+
+  const containerVariants = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.15 // Delay between each card
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { scale: 0.5, opacity: 0, y: -100 },
+    show: {
+      scale: 1,
+      opacity: 1,
+      y: 0,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  return (
+    <motion.div
+      className="community-cards"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <AnimatePresence>
+        {communityCards.map((card, i) => (
+          <motion.div
+            key={card.id}
+            variants={cardVariants}
+            layout // Smooth repositioning on add/remove
+          >
+            <PlayingCard card={card} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+```
+
+**Winner Celebration**:
+```typescript
+const WinnerAnnouncement: React.FC = () => {
+  return (
+    <motion.div
+      initial={{ scale: 0, rotate: -180 }}
+      animate={{ scale: 1, rotate: 0 }}
+      exit={{ scale: 0, rotate: 180 }}
+      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+      className="winner-celebration"
+    >
+      <motion.h2
+        animate={{
+          scale: [1, 1.1, 1],
+          textShadow: [
+            "0 0 0px #ffd700",
+            "0 0 20px #ffd700",
+            "0 0 0px #ffd700"
+          ]
+        }}
+        transition={{ duration: 1, repeat: Infinity }}
+      >
+        You Win!
+      </motion.h2>
+    </motion.div>
+  );
+};
+```
+
+**Animation Settings** (Speed Control):
+```typescript
+// src/state-management/settingsStore.ts
+const animationSpeed = {
+  off: 0,      // No animations
+  fast: 0.5,   // 50% duration
+  normal: 1.0, // 100% duration
+  slow: 2.0    // 200% duration
+};
+
+// Apply globally to all Framer Motion animations
+const duration = baselineuration * animationSpeed[settings.animationSpeed];
+```
+
+**Advantages of Framer Motion**:
+- **Declarative**: No manual class toggling or setTimeout management
+- **TypeScript**: Full type safety for animation props
+- **Layout Animations**: Automatic smooth transitions when elements move
+- **Gestures**: Built-in drag, hover, tap support for future interactivity
+- **Performance**: GPU-accelerated, 60fps, automatically uses `transform` and `opacity`
+- **Orchestration**: Easy sequencing with `staggerChildren` and variants
+- **Exit Animations**: AnimatePresence handles unmounting animations
+
+**Performance**: Framer Motion automatically optimizes animations, uses hardware acceleration, and batches DOM updates
 
 ---
 
@@ -648,26 +802,30 @@ const CommunityCards: React.FC = () => {
 
 **Test Framework Setup**:
 ```typescript
-// jest.config.js
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom', // For React components
-  coverageThreshold: {
-    global: {
-      statements: 80,
-      branches: 75,
-      functions: 80,
-      lines: 80
-    }
-  },
-  collectCoverageFrom: [
-    'src/game-logic/**/*.ts',
-    'src/bot-ai/**/*.ts',
-    'src/presentation/components/**/*.tsx',
-    '!**/*.test.ts',
-    '!**/*.test.tsx'
-  ]
-};
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom', // For React components
+    setupFiles: ['./tests/setup.ts'],
+    coverage: {
+      provider: 'v8', // Faster than istanbul
+      reporter: ['text', 'json', 'html'],
+      exclude: ['**/*.test.ts', '**/*.test.tsx', '**/node_modules/**'],
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80
+      }
+    },
+    include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}']
+  }
+});
 ```
 
 **TDD Workflow**:
@@ -689,31 +847,39 @@ module.exports = {
 
 ### Deliverables
 1. **Project Initialization**
-   - Run `npm create vite@latest standalone-poker-game -- --template react-ts`
-   - Install dependencies: `react`, `react-dom`, `typescript`, `vite`
-   - Install Zustand: `npm install zustand`
-   - Install Tailwind: `npm install -D tailwindcss postcss autoprefixer`
-   - Install Lucide React: `npm install lucide-react`
-   - Install poker-evaluator: `npm install poker-evaluator` (Sukhmai's actively maintained fork)
-   - Install i18next: `npm install react-i18next i18next`
+   - Install pnpm globally: `npm install -g pnpm`
+   - Run `pnpm create vite@latest texas-poker-demo -- --template react-ts`
+   - Install core dependencies: `pnpm add react@18.3 react-dom@18.3`
+   - Install Zustand: `pnpm add zustand`
+   - Install Tailwind: `pnpm add -D tailwindcss@4 postcss autoprefixer`
+   - Install shadcn/ui: `pnpm dlx shadcn@latest init` (sets up components)
+   - Install Framer Motion: `pnpm add framer-motion`
+   - Install Lucide React: `pnpm add lucide-react`
+   - Install poker-evaluator: `pnpm add poker-evaluator` (Sukhmai's actively maintained fork)
+   - Install Zod: `pnpm add zod`
+   - Install React Hook Form: `pnpm add react-hook-form @hookform/resolvers`
+   - Install i18next (optional): `pnpm add react-i18next i18next`
 
 2. **Test Infrastructure**
-   - Install Jest: `npm install -D jest ts-jest @types/jest`
-   - Install React Testing Library: `npm install -D @testing-library/react @testing-library/jest-dom @testing-library/user-event`
-   - Configure jest.config.js with coverage thresholds
+   - Install Vitest: `pnpm add -D vitest @vitest/ui`
+   - Install React Testing Library: `pnpm add -D @testing-library/react @testing-library/jest-dom @testing-library/user-event`
+   - Install Playwright: `pnpm add -D @playwright/test`
+   - Configure vitest.config.ts with coverage thresholds (c8 or istanbul)
+   - Configure playwright.config.ts for E2E tests
    - Create test utilities (setup file, custom matchers)
 
 3. **Build Configuration**
    - Configure vite.config.ts (plugins, build options, code-splitting)
    - Configure tsconfig.json (strict mode, paths, exclude)
-   - Configure Tailwind CSS (tailwind.config.js, global styles)
+   - Configure Tailwind CSS (tailwind.config.ts, global styles with @layer)
+   - Configure shadcn/ui (components.json for customization)
 
 4. **Code Quality Tools**
-   - Install ESLint: `npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser`
-   - Install Prettier: `npm install -D prettier eslint-config-prettier`
-   - Configure .eslintrc.js (TypeScript rules, React rules)
-   - Configure .prettierrc (formatting rules)
-   - Add pre-commit hooks (Husky + lint-staged)
+   - Install Biome: `pnpm add -D @biomejs/biome`
+   - Initialize Biome: `pnpm biome init`
+   - Configure biome.json (linting + formatting rules)
+   - Remove ESLint/Prettier if present (Biome replaces both)
+   - Add pre-commit hooks: `pnpm add -D husky lint-staged`
 
 5. **Project Structure**
    - Create folder structure (src/presentation, src/game-logic, src/bot-ai, tests/)
@@ -726,19 +892,23 @@ module.exports = {
    - Write CLAUDE.md (instructions for Claude Code)
 
 7. **Verification**
-   - Run `npm run dev` - dev server starts successfully
-   - Run `npm run build` - production build succeeds
-   - Run `npm test` - test suite runs (even if empty)
-   - Run `npm run lint` - no linting errors
-   - Verify hot module replacement (edit component, see instant update)
+   - Run `pnpm dev` - dev server starts successfully (<1s cold start)
+   - Run `pnpm build` - production build succeeds
+   - Run `pnpm test` - Vitest suite runs (even if empty)
+   - Run `pnpm test:ui` - Vitest UI opens in browser
+   - Run `pnpm biome check` - no linting/formatting errors
+   - Run `pnpm biome format --write .` - formats all files
+   - Verify hot module replacement (edit component, see instant update <50ms)
 
 **Acceptance Criteria**:
 - [x] Project builds without errors in both dev and production modes
-- [x] Test suite runs and reports coverage (even if 0%)
-- [x] ESLint and Prettier configured and working
+- [x] Vitest suite runs and reports coverage (even if 0%)
+- [x] Biome linting and formatting configured and working
+- [x] shadcn/ui components accessible via CLI
 - [x] Folder structure matches plan.md specification
 - [x] README.md provides clear setup instructions
 - [x] Git repository initialized with .gitignore
+- [x] pnpm lockfile committed
 
 **Estimated Time**: 8-10 hours
 
@@ -1270,7 +1440,17 @@ module.exports = {
 
 ---
 
-**Plan Version**: 1.3 (Updated for poker-evaluator by Sukhmai)
-**Last Updated**: 2025-11-18
+**Plan Version**: 2.0 (Modern Tech Stack Update)
+**Last Updated**: 2025-11-17
 **Status**: Ready for implementation
+**Tech Stack**: React 18.3 + TypeScript 5.7 + Vite 6 + Vitest + shadcn/ui + Framer Motion + Zustand 5 + pnpm + Biome
 **Hand Evaluator**: poker-evaluator (Sukhmai) - Native TypeScript, actively maintained (Aug 2025), 22M hands/sec
+**Major Changes from v1.3**:
+- Replaced Jest with Vitest (2-10x faster)
+- Replaced ESLint+Prettier with Biome (97% faster)
+- Replaced npm with pnpm (2-3x faster, disk efficient)
+- Added shadcn/ui (saves ~20 hours of UI development)
+- Added Framer Motion (declarative animations)
+- Added Zod + React Hook Form (type-safe validation)
+- Upgraded to Vite 6, TailwindCSS 4, TypeScript 5.7, Zustand 5
+- **Estimated time saved: ~38 hours (~20% reduction)**
