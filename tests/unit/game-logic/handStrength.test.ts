@@ -102,7 +102,7 @@ describe('Hand Strength Calculations', () => {
       ];
 
       const strength = calculateHandStrength(holeCards, communityCards);
-      expect(strength).toBeGreaterThan(0.85); // Four of a kind = rank 7 / 9
+      expect(strength).toBeGreaterThan(0.75); // Four of a kind = rank 7 / 9 = 0.777...
     });
 
     it('should evaluate pair lower than flush', () => {

@@ -1,5 +1,9 @@
+import { useEffect, useState } from 'react';
+import { useMachine } from '@xstate/react';
 import type { pokerMachine } from '@/state-management/pokerMachine';
 import type { GameSettings } from '@/types';
+import { makeBotDecision, getBotActionDelay } from '@/bot-ai';
+import { getActionDescription } from '@/utils/botActionService';
 
 interface GamePageProps {
   state: ReturnType<typeof useMachine<typeof pokerMachine>>[0];
@@ -7,11 +11,100 @@ interface GamePageProps {
   settings: GameSettings;
 }
 
-import { useMachine } from '@xstate/react';
-
 export default function GamePage({ state, send, settings: _settings }: GamePageProps) {
   const context = state.context;
   const currentState = state.value;
+  const [botActionMessage, setBotActionMessage] = useState<string>('');
+  const [isProcessingBotAction, setIsProcessingBotAction] = useState(false);
+
+  // Bot AI auto-play
+  useEffect(() => {
+    if (!state.matches('inGame') || isProcessingBotAction) return;
+
+    const currentPlayer = context.players[context.currentPlayerIndex];
+    if (!currentPlayer || currentPlayer.type !== 'bot') return;
+
+    // Bot's turn - execute bot action with delay
+    setIsProcessingBotAction(true);
+
+    const delay = getBotActionDelay(currentPlayer.botDifficulty || 'easy');
+
+    const timeoutId = setTimeout(() => {
+      try {
+        const action = makeBotDecision({
+          player: currentPlayer,
+          allPlayers: context.players,
+          communityCards: context.communityCards,
+          currentBet: Math.max(...context.players.map(p => p.currentBet)),
+          potSize: context.pot.totalPot,
+          smallBlind: context.smallBlind,
+          bigBlind: context.bigBlind,
+          dealerIndex: context.dealerIndex,
+          gamePhase: context.gamePhase,
+        });
+
+        // Show bot action message
+        const message = getActionDescription(action, currentPlayer.name);
+        setBotActionMessage(message);
+
+        // Send action to state machine
+        send({ type: 'PLAYER_ACTION', action });
+
+        // Clear message after 2 seconds
+        setTimeout(() => {
+          setBotActionMessage('');
+          setIsProcessingBotAction(false);
+        }, 1500);
+      } catch (error) {
+        console.error('Bot action error:', error);
+        setIsProcessingBotAction(false);
+      }
+    }, delay);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [context.currentPlayerIndex, context.players, state, send, context, isProcessingBotAction]);
+
+  // Automatic phase progression
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
+
+    // Auto-advance from postingBlinds to preflop after brief delay
+    if (state.matches({ inGame: 'postingBlinds' })) {
+      timer = setTimeout(() => {
+        send({ type: 'ADVANCE_PHASE' });
+      }, 1500);
+    }
+    // Auto-complete hand after showdown
+    else if (state.matches({ inGame: 'showdown' })) {
+      timer = setTimeout(() => {
+        send({ type: 'COMPLETE_HAND' });
+      }, 3000);
+    }
+    // Try to advance phase after each action (guards will prevent if not ready)
+    else if (
+      !isProcessingBotAction &&
+      (state.matches({ inGame: 'preflop' }) ||
+        state.matches({ inGame: 'flop' }) ||
+        state.matches({ inGame: 'turn' }) ||
+        state.matches({ inGame: 'river' }))
+    ) {
+      timer = setTimeout(() => {
+        send({ type: 'ADVANCE_PHASE' });
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [state, isProcessingBotAction, send]);
+
+  const currentPlayer = context.players[context.currentPlayerIndex];
+  const isHumanTurn = currentPlayer?.type === 'human';
+  const currentBet = Math.max(...context.players.map(p => p.currentBet));
+  const callAmount = currentBet - (currentPlayer?.currentBet || 0);
+  const canCheck = callAmount === 0;
 
   return (
     <div className="min-h-screen felt-texture flex items-center justify-center p-4">
@@ -24,6 +117,10 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
               <span className="text-green-400">{JSON.stringify(currentState)}</span>
             </div>
             <div>
+              <span className="text-gray-400">Phase:</span>{' '}
+              <span className="text-purple-400">{context.gamePhase || 'menu'}</span>
+            </div>
+            <div>
               <span className="text-gray-400">Players:</span>{' '}
               <span className="text-blue-400">{context.players.length}</span>
             </div>
@@ -34,6 +131,15 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
           </div>
         </div>
 
+        {/* Bot Action Message */}
+        {botActionMessage && (
+          <div className="mb-4 text-center">
+            <div className="bg-blue-600/90 backdrop-blur text-white py-3 px-6 rounded-lg inline-block animate-fade-in">
+              {botActionMessage}
+            </div>
+          </div>
+        )}
+
         {/* Poker Table */}
         <div className="bg-felt-600 rounded-[3rem] border-8 border-gray-800 shadow-2xl p-12 relative">
           {/* Community Cards */}
@@ -42,14 +148,22 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
               context.communityCards.map((card, index) => (
                 <div
                   key={index}
-                  className="w-16 h-24 bg-white rounded-lg shadow-lg flex items-center justify-center text-2xl font-bold"
+                  className="w-16 h-24 bg-white rounded-lg shadow-lg flex flex-col items-center justify-center text-2xl font-bold animate-card-deal"
                 >
-                  {card.rank}
-                  {card.suit}
+                  <span className={card.suit === '♥' || card.suit === '♦' ? 'text-card-red' : 'text-card-black'}>
+                    {card.rank}
+                  </span>
+                  <span className={card.suit === '♥' || card.suit === '♦' ? 'text-card-red' : 'text-card-black'}>
+                    {card.suit}
+                  </span>
                 </div>
               ))
             ) : (
-              <div className="text-white/50 text-center py-8">Waiting to deal...</div>
+              <div className="text-white/50 text-center py-8">
+                {state.matches({ inGame: 'postingBlinds' })
+                  ? 'Posting blinds...'
+                  : 'Waiting to deal...'}
+              </div>
             )}
           </div>
 
@@ -67,117 +181,169 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
             {context.players.map((player, index) => (
               <div
                 key={player.id}
-                className={`bg-gray-800/90 backdrop-blur rounded-xl p-4 ${
-                  index === context.currentPlayerIndex ? 'ring-2 ring-yellow-400' : ''
-                }`}
+                className={`bg-gray-800/90 backdrop-blur rounded-xl p-4 transition-all ${
+                  index === context.currentPlayerIndex ? 'ring-4 ring-yellow-400 scale-105' : ''
+                } ${player.isFolded ? 'opacity-50' : ''}`}
               >
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-semibold">{player.name}</span>
-                  <span className="text-green-400">${player.chips}</span>
+                  <div>
+                    <span className="font-semibold">{player.name}</span>
+                    {player.type === 'bot' && player.botDifficulty && (
+                      <span className="ml-2 text-xs text-gray-400">
+                        ({player.botDifficulty})
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-green-400 font-bold">${player.chips}</span>
                 </div>
 
                 {/* Hole Cards */}
-                <div className="flex gap-1">
-                  {player.holeCards.map((card, cardIndex) => (
-                    <div
-                      key={cardIndex}
-                      className="w-12 h-16 bg-white rounded shadow-md flex items-center justify-center text-sm font-bold"
-                    >
-                      {player.type === 'human' ? (
-                        <>
-                          {card.rank}
-                          {card.suit}
-                        </>
-                      ) : (
-                        <div className="w-full h-full bg-blue-600 rounded flex items-center justify-center text-white">
-                          ?
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {player.holeCards.length > 0 && (
+                  <div className="flex gap-1 mb-2">
+                    {player.holeCards.map((card, cardIndex) => (
+                      <div
+                        key={cardIndex}
+                        className="w-12 h-16 rounded shadow-md flex items-center justify-center text-sm font-bold"
+                      >
+                        {player.type === 'human' ? (
+                          <div className="w-full h-full bg-white rounded flex flex-col items-center justify-center">
+                            <span className={card.suit === '♥' || card.suit === '♦' ? 'text-card-red' : 'text-card-black'}>
+                              {card.rank}
+                            </span>
+                            <span className={card.suit === '♥' || card.suit === '♦' ? 'text-card-red' : 'text-card-black'}>
+                              {card.suit}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full bg-blue-600 rounded flex items-center justify-center text-white">
+                            ?
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Status */}
-                {player.isFolded && (
-                  <div className="mt-2 text-red-400 text-sm">Folded</div>
-                )}
-                {player.isAllIn && (
-                  <div className="mt-2 text-yellow-400 text-sm">All-In</div>
-                )}
-                {player.currentBet > 0 && (
-                  <div className="mt-2 text-blue-400 text-sm">Bet: ${player.currentBet}</div>
-                )}
+                <div className="space-y-1">
+                  {player.isFolded && (
+                    <div className="text-red-400 text-sm font-semibold">✗ Folded</div>
+                  )}
+                  {player.isAllIn && (
+                    <div className="text-yellow-400 text-sm font-semibold">⬆ All-In!</div>
+                  )}
+                  {player.currentBet > 0 && !player.isFolded && (
+                    <div className="text-blue-400 text-sm">Bet: ${player.currentBet}</div>
+                  )}
+                  {index === context.currentPlayerIndex && !player.isFolded && !player.isAllIn && (
+                    <div className="text-yellow-400 text-sm font-semibold animate-pulse">
+                      {player.type === 'human' ? '→ Your turn' : '→ Thinking...'}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
 
           {/* Action Buttons - Only show for human player's turn */}
-          {state.matches('inGame') && context.currentPlayerIndex === 0 && (
-            <div className="mt-8 flex justify-center gap-4">
+          {state.matches('inGame') && isHumanTurn && currentPlayer && (
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
               <button
                 onClick={() =>
                   send({
                     type: 'PLAYER_ACTION',
                     action: {
-                      playerId: 'human-1',
+                      playerId: currentPlayer.id,
                       type: 'fold',
                       amount: 0,
                       timestamp: Date.now(),
                     },
                   })
                 }
-                className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl transition-colors"
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 active:scale-95"
               >
                 Fold
               </button>
+
+              {canCheck && (
+                <button
+                  onClick={() =>
+                    send({
+                      type: 'PLAYER_ACTION',
+                      action: {
+                        playerId: currentPlayer.id,
+                        type: 'check',
+                        amount: 0,
+                        timestamp: Date.now(),
+                      },
+                    })
+                  }
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 active:scale-95"
+                >
+                  Check
+                </button>
+              )}
+
+              {!canCheck && (
+                <button
+                  onClick={() =>
+                    send({
+                      type: 'PLAYER_ACTION',
+                      action: {
+                        playerId: currentPlayer.id,
+                        type: 'call',
+                        amount: Math.min(callAmount, currentPlayer.chips),
+                        timestamp: Date.now(),
+                      },
+                    })
+                  }
+                  disabled={currentPlayer.chips === 0}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 active:scale-95"
+                >
+                  Call ${Math.min(callAmount, currentPlayer.chips)}
+                </button>
+              )}
+
               <button
-                onClick={() =>
+                onClick={() => {
+                  const raiseAmount = Math.min(
+                    callAmount + context.bigBlind,
+                    currentPlayer.chips
+                  );
                   send({
                     type: 'PLAYER_ACTION',
                     action: {
-                      playerId: 'human-1',
-                      type: 'check',
-                      amount: 0,
+                      playerId: currentPlayer.id,
+                      type: raiseAmount >= currentPlayer.chips ? 'all-in' : 'raise',
+                      amount: raiseAmount,
                       timestamp: Date.now(),
                     },
-                  })
-                }
-                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-xl transition-colors"
+                  });
+                }}
+                disabled={currentPlayer.chips <= callAmount}
+                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 active:scale-95"
               >
-                Check
+                Raise ${Math.min(callAmount + context.bigBlind, currentPlayer.chips)}
               </button>
-              <button
-                onClick={() =>
-                  send({
-                    type: 'PLAYER_ACTION',
-                    action: {
-                      playerId: 'human-1',
-                      type: 'call',
-                      amount: context.bigBlind,
-                      timestamp: Date.now(),
-                    },
-                  })
-                }
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition-colors"
-              >
-                Call ${context.bigBlind}
-              </button>
-              <button
-                onClick={() =>
-                  send({
-                    type: 'PLAYER_ACTION',
-                    action: {
-                      playerId: 'human-1',
-                      type: 'raise',
-                      amount: context.bigBlind * 2,
-                      timestamp: Date.now(),
-                    },
-                  })
-                }
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl transition-colors"
-              >
-                Raise ${context.bigBlind * 2}
-              </button>
+
+              {currentPlayer.chips > callAmount && (
+                <button
+                  onClick={() =>
+                    send({
+                      type: 'PLAYER_ACTION',
+                      action: {
+                        playerId: currentPlayer.id,
+                        type: 'all-in',
+                        amount: currentPlayer.chips,
+                        timestamp: Date.now(),
+                      },
+                    })
+                  }
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-xl transition-all hover:scale-105 active:scale-95"
+                >
+                  All-In ${currentPlayer.chips}
+                </button>
+              )}
             </div>
           )}
 
@@ -191,6 +357,19 @@ export default function GamePage({ state, send, settings: _settings }: GamePageP
                     ? 'Congratulations! You won!'
                     : 'Better luck next time!'}
                 </p>
+                <div className="mb-4">
+                  <div className="text-lg font-semibold mb-2">Final Standings:</div>
+                  {[...context.players]
+                    .sort((a, b) => b.chips - a.chips)
+                    .map((player, index) => (
+                      <div key={player.id} className="flex justify-between py-1">
+                        <span>
+                          {index + 1}. {player.name}
+                        </span>
+                        <span className="text-green-400">${player.chips}</span>
+                      </div>
+                    ))}
+                </div>
                 <button
                   onClick={() => send({ type: 'RESET_GAME' })}
                   className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl transition-colors"
