@@ -19,207 +19,276 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 
 ## Technical Context
 
-### Technology Stack
+### Technology Stack (UPDATED - Modern & Optimized)
 
-**Frontend Framework**: React 18.2+
-- **Why**: Component-based architecture perfect for complex UI (poker table, cards, actions)
-- **Hooks**: useState, useEffect, useReducer for component state
-- **Performance**: React.memo, useMemo, useCallback for optimization
-- **Styling**: Tailwind CSS for utility-first design, custom CSS for animations
+**Frontend Framework**: Svelte 5 with SvelteKit
+- **Why Svelte over React**:
+  - 50% smaller bundle size (critical for game performance)
+  - No virtual DOM = faster rendering and updates
+  - Built-in reactivity without hooks boilerplate
+  - Superior animation performance (native CSS transitions)
+  - Simpler, more readable code (less boilerplate)
+  - Perfect for interactive games and real-time UIs
+  - Compile-time optimization vs runtime overhead
+- **Features**:
+  - Runes API (Svelte 5): $state, $derived, $effect for reactivity
+  - Built-in transitions and animations
+  - Scoped CSS by default
+  - File-based routing with SvelteKit (optional, but recommended)
+- **Performance**: Consistently faster than React in benchmarks, lower memory usage
+- **Learning Curve**: Easier to learn and maintain than React
 
-**Language**: TypeScript 5.x (Strict Mode)
+**Language**: TypeScript 5.3+ (Strict Mode)
 - **Why**: Type safety critical for poker logic correctness
 - **Strict**: No `any` types, complete type coverage
 - **Interfaces**: Strong typing for game state, actions, bot decisions
 - **Generics**: Reusable utility functions with type safety
+- **Updated**: Latest TypeScript version for better DX and features
 
-**State Management**: Zustand 4.x
-- **Why**: Simpler than Redux, perfect for client-side state
-- **Stores**: Separate stores for game state, UI state, settings
-- **Immer**: Built-in support for immutable state updates
-- **DevTools**: Redux DevTools integration for debugging
+**State Management**: Svelte Stores (Built-in)
+- **Why**: No external library needed, native Svelte feature
+- **Types**: Writable, Readable, Derived stores
+- **Reactivity**: Automatic UI updates with $ prefix
+- **Persistence**: Easy localStorage integration with custom stores
+- **DevTools**: Svelte DevTools for debugging
+- **Benefit**: Eliminates Zustand dependency, simpler code
 
-**Build Tool**: Vite 5.x
+**Build Tool**: Vite 5.x (Keep - Still Best Choice)
 - **Why**: Fast development server (<100ms HMR), optimized production builds
 - **Features**: ES modules, code-splitting, tree-shaking, minification
-- **Plugins**: TypeScript, React, PostCSS (for Tailwind)
+- **Plugins**: TypeScript, Svelte, PostCSS (for Tailwind)
+- **SvelteKit**: Built on Vite, adds file-based routing and server features
 
-**Testing Framework**: Jest 29.x + React Testing Library
-- **Unit Tests**: Game logic (hand evaluation, pot calculation, bot AI)
-- **Component Tests**: UI components (buttons, cards, table layout)
-- **Integration Tests**: Full game flows (complete hands, multiple scenarios)
+**Testing Framework**: Vitest + Playwright (Modern Testing Stack)
+- **Vitest** (replaces Jest):
+  - **Why**: 10x faster than Jest, built for Vite
+  - Same API as Jest (easy migration)
+  - First-class TypeScript support
+  - Native ES modules support
+  - Watch mode with HMR
+  - Better error messages
+- **Playwright** (replaces React Testing Library):
+  - **Why**: Better component and E2E testing
+  - Tests real browser behavior
+  - Visual testing capabilities
+  - Better async handling
 - **Coverage**: Target 80% for game logic, 60% for UI
 
-**Hand Evaluation Library**: pokersolver (https://github.com/goldfire/pokersolver)
-- **Why**: Battle-tested with 2,700+ weekly downloads, used by 1,100+ repos, stable and reliable
-- **Features**: 5-7 card evaluation, hand ranking, comparison, supports multiple game types
-- **Integration**: Simple synchronous API, TypeScript types available via @types/pokersolver
-- **Performance**: Fast enough for 200+ concurrent players, no async initialization needed
-- **Adoption**: 414 GitHub stars, mature codebase, zero runtime dependencies
+**Hand Evaluation Library**: pokersolver (Keep - Battle-tested)
+- **Why**: Proven with 2,700+ weekly downloads, used by 1,100+ repos
+- **Features**: 5-7 card evaluation, hand ranking, comparison, multiple game types
+- **Integration**: Simple synchronous API, TypeScript types via @types/pokersolver
+- **Performance**: Fast enough for 200+ concurrent players, zero dependencies
+- **Adoption**: 414 GitHub stars, mature codebase, production-ready
 
-**Icons**: Lucide React
-- **Why**: Professional, tree-shakeable, 1000+ icons
+**Styling**: Tailwind CSS 3.x (Keep) + Svelte Scoped Styles
+- **Tailwind**: Utility-first CSS framework for rapid development
+- **Svelte Scoped**: Component-scoped styles without CSS-in-JS overhead
+- **Performance**: No runtime CSS-in-JS, all styles compiled at build time
+- **DX**: Combine Tailwind utilities with scoped custom styles
+
+**Icons**: Lucide Svelte (Svelte-optimized version)
+- **Why**: Tree-shakeable, 1000+ icons, Svelte-optimized
 - **Usage**: Suits (♠ ♥ ♦ ♣), actions (fold, raise, all-in), UI (settings, stats)
 - **No Emojis**: Professional appearance, consistent design
+- **Bundle**: Only icons you use are included
 
-**Localization**: react-i18next
-- **Why**: Industry standard, supports plural forms, interpolation
-- **Setup**: English default, infrastructure ready for Vietnamese, Thai, Chinese
-- **Keys**: No hardcoded strings, all text via t('key') function
+**Localization**: typesafe-i18n (Type-safe Alternative)
+- **Why**: Better than react-i18next:
+  - Full TypeScript type safety (autocomplete, compile-time checks)
+  - Smaller bundle size
+  - Framework-agnostic (works perfectly with Svelte)
+  - Better DX with type-safe keys
+- **Setup**: English default, easy to add Vietnamese, Thai, Chinese
+- **Keys**: All translations fully typed, no runtime string errors
+- **Alternative**: paraglide-js (even newer, excellent for Svelte)
 
 ---
 
-## Project Structure
+### Key Technology Benefits
+
+**Bundle Size Comparison**:
+- React + Zustand + react-i18next: ~150-200 KB (minified + gzipped)
+- Svelte + native stores + typesafe-i18n: ~50-80 KB (minified + gzipped)
+- **Result**: 60-70% smaller bundle, faster load times
+
+**Performance Comparison**:
+- React: Virtual DOM diffing overhead
+- Svelte: Direct DOM manipulation, compiled code
+- **Result**: Faster rendering, lower memory usage, better for games
+
+**Developer Experience**:
+- React: More boilerplate (useState, useEffect, useCallback, useMemo)
+- Svelte: Less boilerplate (reactive $: syntax, built-in stores)
+- **Result**: Faster development, more maintainable code
+
+**Testing Speed**:
+- Jest: ~5-10 seconds for 100 tests
+- Vitest: ~0.5-1 second for 100 tests
+- **Result**: 10x faster test execution, better DX
+
+---
+
+### Migration Path (If React Experience Required)
+
+If the team insists on React ecosystem, here's the **modern React stack**:
+
+**Framework**: React 18.3+ (or Preact for smaller bundle)
+**Build**: Vite 5.x ✅
+**State**: Zustand 4.x ✅ or Jotai (atomic state)
+**Testing**: Vitest ⚠️ (replace Jest)
+**Component Testing**: Playwright ⚠️ (replace React Testing Library)
+**Styling**: Tailwind CSS ✅
+**Localization**: typesafe-i18n ⚠️ (replace react-i18next)
+**Icons**: Lucide React ✅
+
+**Key Changes Even with React**:
+- Jest → Vitest (non-negotiable, 10x speed improvement)
+- React Testing Library → Playwright Component Testing
+- react-i18next → typesafe-i18n (better types)
+
+---
+
+## Project Structure (Svelte/SvelteKit)
 
 ```
 standalone-poker-game/
 ├── src/
-│   ├── presentation/                  # React UI layer
-│   │   ├── components/
+│   ├── lib/                           # SvelteKit lib folder (shared code)
+│   │   ├── components/                # Svelte UI components
 │   │   │   ├── game/                  # Game-specific components
-│   │   │   │   ├── PokerTable.tsx     # Main table layout
-│   │   │   │   ├── PlayerSeat.tsx     # Individual player position
-│   │   │   │   ├── CommunityCards.tsx # Flop/turn/river cards
-│   │   │   │   ├── PotDisplay.tsx     # Pot amount with chips visualization
-│   │   │   │   ├── ActionButtons.tsx  # Fold/Call/Raise buttons
-│   │   │   │   ├── RaiseSlider.tsx    # Raise amount selector
-│   │   │   │   ├── ActionTimer.tsx    # Countdown timer
-│   │   │   │   ├── WinnerAnnouncement.tsx # Winner celebration
-│   │   │   │   ├── ActionLog.tsx      # Recent actions history
-│   │   │   │   └── DealerButton.tsx   # Dealer indicator
+│   │   │   │   ├── PokerTable.svelte  # Main table layout
+│   │   │   │   ├── PlayerSeat.svelte  # Individual player position
+│   │   │   │   ├── CommunityCards.svelte # Flop/turn/river cards
+│   │   │   │   ├── PotDisplay.svelte  # Pot amount with chips visualization
+│   │   │   │   ├── ActionButtons.svelte # Fold/Call/Raise buttons
+│   │   │   │   ├── RaiseSlider.svelte # Raise amount selector
+│   │   │   │   ├── ActionTimer.svelte # Countdown timer
+│   │   │   │   ├── WinnerAnnouncement.svelte # Winner celebration
+│   │   │   │   ├── ActionLog.svelte   # Recent actions history
+│   │   │   │   └── DealerButton.svelte # Dealer indicator
 │   │   │   ├── cards/
-│   │   │   │   ├── PlayingCard.tsx    # Single card component
-│   │   │   │   ├── CardBack.tsx       # Face-down card
-│   │   │   │   └── CardFront.tsx      # Face-up card with suit/rank
+│   │   │   │   ├── PlayingCard.svelte # Single card component
+│   │   │   │   ├── CardBack.svelte    # Face-down card
+│   │   │   │   └── CardFront.svelte   # Face-up card with suit/rank
 │   │   │   ├── ui/                    # Reusable UI primitives
-│   │   │   │   ├── Button.tsx         # Styled button
-│   │   │   │   ├── Modal.tsx          # Dialog overlay
-│   │   │   │   ├── Slider.tsx         # Range input
-│   │   │   │   ├── Tooltip.tsx        # Hover tooltip
-│   │   │   │   └── Toast.tsx          # Notification system
+│   │   │   │   ├── Button.svelte      # Styled button
+│   │   │   │   ├── Modal.svelte       # Dialog overlay
+│   │   │   │   ├── Slider.svelte      # Range input
+│   │   │   │   ├── Tooltip.svelte     # Hover tooltip
+│   │   │   │   └── Toast.svelte       # Notification system
 │   │   │   └── layout/
-│   │   │       ├── MainMenu.tsx       # Start screen
-│   │   │       ├── SettingsPanel.tsx  # Game settings
-│   │   │       ├── StatsPanel.tsx     # Session statistics
-│   │   │       └── GameOverScreen.tsx # End game summary
-│   │   ├── pages/
-│   │   │   ├── HomePage.tsx           # Main menu (Quick Play, Settings, etc.)
-│   │   │   ├── GamePage.tsx           # Active game table
-│   │   │   └── SettingsPage.tsx       # Full settings interface
-│   │   ├── hooks/
-│   │   │   ├── useGameState.ts        # Access game state from store
-│   │   │   ├── useGameActions.ts      # Dispatch game actions
-│   │   │   ├── useSettings.ts         # Access/modify settings
-│   │   │   ├── useAnimation.ts        # Animation control
-│   │   │   └── useKeyboardShortcuts.ts # Keyboard event handling
-│   │   └── styles/
-│   │       ├── global.css             # Global styles
-│   │       ├── table.css              # Poker table specific
-│   │       ├── cards.css              # Card designs
-│   │       └── animations.css         # Keyframe animations
+│   │   │       ├── MainMenu.svelte    # Start screen
+│   │   │       ├── SettingsPanel.svelte # Game settings
+│   │   │       ├── StatsPanel.svelte  # Session statistics
+│   │   │       └── GameOverScreen.svelte # End game summary
+│   │   │
+│   │   ├── stores/                    # Svelte stores (state management)
+│   │   │   ├── gameStore.ts           # Game state (cards, pot, players, phase)
+│   │   │   ├── settingsStore.ts       # User settings (difficulty, chips, animations)
+│   │   │   ├── uiStore.ts             # UI state (modals, dialogs, loading)
+│   │   │   └── statsStore.ts          # Session statistics (hands played, win rate)
+│   │   │
+│   │   ├── utils/                     # Shared utilities
+│   │   │   ├── formatters.ts          # Format numbers, chips, percentages
+│   │   │   ├── constants.ts           # Game constants (blind levels, timeouts)
+│   │   │   ├── logger.ts              # Console logging wrapper
+│   │   │   └── storage.ts             # localStorage wrapper for settings
+│   │   │
+│   │   ├── i18n/                      # Internationalization (typesafe-i18n)
+│   │   │   ├── i18n-types.ts          # Auto-generated types
+│   │   │   ├── i18n-util.ts           # i18n utilities
+│   │   │   ├── en/                    # English translations
+│   │   │   │   ├── index.ts           # English locale
+│   │   │   │   └── README.md          # Translation guide
+│   │   │   └── formatters.ts          # Custom formatters
+│   │   │
+│   │   ├── assets/                    # Static assets
+│   │   │   ├── images/
+│   │   │   │   ├── cards/             # Card images (PNG/SVG)
+│   │   │   │   ├── avatars/           # Bot avatars
+│   │   │   │   ├── chips/             # Chip graphics
+│   │   │   │   └── table/             # Table textures
+│   │   │   └── sounds/                # Sound effects (optional)
+│   │   │       ├── card-deal.mp3
+│   │   │       ├── chip-slide.mp3
+│   │   │       ├── win-celebration.mp3
+│   │   │       └── timer-tick.mp3
+│   │   │
+│   │   └── game-logic/                # Pure TypeScript game engine (framework-agnostic)
+│   │       ├── engine/
+│   │       │   ├── GameEngine.ts      # Orchestrates game loop
+│   │       │   ├── GameStateMachine.ts # Phase transitions (preflop→flop→turn→river→showdown)
+│   │       │   ├── ActionProcessor.ts # Validates and applies player actions
+│   │       │   ├── BettingRoundManager.ts # Detects betting round completion
+│   │       │   └── HandCompletionHandler.ts # End-of-hand logic (award pot, rotate button)
+│   │       ├── rules/
+│   │       │   ├── BettingRules.ts    # Min/max bet validation, raise rules
+│   │       │   ├── BlindRules.ts      # SB/BB posting, heads-up rules
+│   │       │   ├── PositionRules.ts   # Dealer, SB, BB, UTG calculations
+│   │       │   └── ShowdownRules.ts   # Card reveal order, mucking rules
+│   │       ├── evaluation/
+│   │       │   ├── HandEvaluator.ts   # Wrapper for pokersolver library
+│   │       │   ├── HandComparator.ts  # Compare two hands (with tie-breaking)
+│   │       │   └── BestHandFinder.ts  # Find best 5-card hand from 7 cards
+│   │       ├── pot/
+│   │       │   ├── PotCalculator.ts   # Calculate main pot and side pots
+│   │       │   ├── PotDistributor.ts  # Award pots to winners
+│   │       │   └── OddChipHandler.ts  # Distribute indivisible chips
+│   │       ├── deck/
+│   │       │   ├── Deck.ts            # 52-card deck, shuffle, deal, burn
+│   │       │   ├── Card.ts            # Card model (rank, suit)
+│   │       │   └── CardShuffler.ts    # Fisher-Yates shuffle algorithm
+│   │       ├── models/
+│   │       │   ├── GameState.ts       # Complete game state interface
+│   │       │   ├── Player.ts          # Player model (id, name, chips, cards, status)
+│   │       │   ├── Action.ts          # Player action (type, amount)
+│   │       │   ├── Pot.ts             # Pot model (main, side pots, eligible players)
+│   │       │   └── Hand.ts            # Hand result (rank, cards, description)
+│   │       ├── validators/
+│   │       │   ├── ActionValidator.ts # Validate player actions
+│   │       │   ├── ChipValidator.ts   # Validate chip amounts
+│   │       │   └── StateValidator.ts  # Validate game state consistency
+│   │       └── bot-ai/                # Bot decision-making
+│   │           ├── strategies/
+│   │           │   ├── EasyStrategy.ts # Simple random-based decisions
+│   │           │   ├── MediumStrategy.ts # Basic poker strategy (position, pot odds)
+│   │           │   ├── HardStrategy.ts # Advanced strategy (hand ranges, bluffing)
+│   │           │   └── StrategyInterface.ts # Common interface for all strategies
+│   │           ├── personality/
+│   │           │   ├── PersonalityTraits.ts # Tight/loose, aggressive/passive traits
+│   │           │   ├── PersonalityGenerator.ts # Assign random personalities to bots
+│   │           │   └── BehaviorModifier.ts # Adjust strategy based on personality
+│   │           ├── decision/
+│   │           │   ├── ActionSelector.ts # Choose action based on strategy
+│   │           │   ├── BetSizer.ts    # Determine bet/raise amount
+│   │           │   ├── BluffDetector.ts # Decide when to bluff
+│   │           │   └── ThinkingTimer.ts # Realistic delay (500ms-3500ms)
+│   │           ├── analysis/
+│   │           │   ├── HandStrengthCalculator.ts # Evaluate hand strength (0-1 scale)
+│   │           │   ├── PotOddsCalculator.ts # Calculate pot odds vs equity
+│   │           │   ├── OpponentModeler.ts # Track opponent patterns (for Hard bots)
+│   │           │   └── BoardAnalyzer.ts # Analyze community cards (draws, made hands)
+│   │           └── BotOrchestrator.ts # Main bot controller
 │   │
-│   ├── game-logic/                    # Pure TypeScript game engine
-│   │   ├── engine/
-│   │   │   ├── GameEngine.ts          # Orchestrates game loop
-│   │   │   ├── GameStateMachine.ts    # Phase transitions (preflop→flop→turn→river→showdown)
-│   │   │   ├── ActionProcessor.ts     # Validates and applies player actions
-│   │   │   ├── BettingRoundManager.ts # Detects betting round completion
-│   │   │   └── HandCompletionHandler.ts # End-of-hand logic (award pot, rotate button)
-│   │   ├── rules/
-│   │   │   ├── BettingRules.ts        # Min/max bet validation, raise rules
-│   │   │   ├── BlindRules.ts          # SB/BB posting, heads-up rules
-│   │   │   ├── PositionRules.ts       # Dealer, SB, BB, UTG calculations
-│   │   │   └── ShowdownRules.ts       # Card reveal order, mucking rules
-│   │   ├── evaluation/
-│   │   │   ├── HandEvaluator.ts       # Wrapper for pokersolver library
-│   │   │   ├── HandComparator.ts      # Compare two hands (with tie-breaking)
-│   │   │   └── BestHandFinder.ts      # Find best 5-card hand from 7 cards
-│   │   ├── pot/
-│   │   │   ├── PotCalculator.ts       # Calculate main pot and side pots
-│   │   │   ├── PotDistributor.ts      # Award pots to winners
-│   │   │   └── OddChipHandler.ts      # Distribute indivisible chips
-│   │   ├── deck/
-│   │   │   ├── Deck.ts                # 52-card deck, shuffle, deal, burn
-│   │   │   ├── Card.ts                # Card model (rank, suit)
-│   │   │   └── CardShuffler.ts        # Fisher-Yates shuffle algorithm
-│   │   ├── models/
-│   │   │   ├── GameState.ts           # Complete game state interface
-│   │   │   ├── Player.ts              # Player model (id, name, chips, cards, status)
-│   │   │   ├── Action.ts              # Player action (type, amount)
-│   │   │   ├── Pot.ts                 # Pot model (main, side pots, eligible players)
-│   │   │   └── Hand.ts                # Hand result (rank, cards, description)
-│   │   └── validators/
-│   │       ├── ActionValidator.ts     # Validate player actions
-│   │       ├── ChipValidator.ts       # Validate chip amounts
-│   │       └── StateValidator.ts      # Validate game state consistency
+│   ├── routes/                        # SvelteKit routes (file-based routing)
+│   │   ├── +page.svelte               # Home page (main menu)
+│   │   ├── +layout.svelte             # Root layout
+│   │   ├── game/
+│   │   │   └── +page.svelte           # Game page (active poker table)
+│   │   └── settings/
+│   │       └── +page.svelte           # Settings page
 │   │
-│   ├── bot-ai/                        # Bot decision-making
-│   │   ├── strategies/
-│   │   │   ├── EasyStrategy.ts        # Simple random-based decisions
-│   │   │   ├── MediumStrategy.ts      # Basic poker strategy (position, pot odds)
-│   │   │   ├── HardStrategy.ts        # Advanced strategy (hand ranges, bluffing)
-│   │   │   └── StrategyInterface.ts   # Common interface for all strategies
-│   │   ├── personality/
-│   │   │   ├── PersonalityTraits.ts   # Tight/loose, aggressive/passive traits
-│   │   │   ├── PersonalityGenerator.ts # Assign random personalities to bots
-│   │   │   └── BehaviorModifier.ts    # Adjust strategy based on personality
-│   │   ├── decision/
-│   │   │   ├── ActionSelector.ts      # Choose action based on strategy
-│   │   │   ├── BetSizer.ts            # Determine bet/raise amount
-│   │   │   ├── BluffDetector.ts       # Decide when to bluff
-│   │   │   └── ThinkingTimer.ts       # Realistic delay (500ms-3500ms)
-│   │   ├── analysis/
-│   │   │   ├── HandStrengthCalculator.ts # Evaluate hand strength (0-1 scale)
-│   │   │   ├── PotOddsCalculator.ts   # Calculate pot odds vs equity
-│   │   │   ├── OpponentModeler.ts     # Track opponent patterns (for Hard bots)
-│   │   │   └── BoardAnalyzer.ts       # Analyze community cards (draws, made hands)
-│   │   └── BotOrchestrator.ts         # Main bot controller
-│   │
-│   ├── state-management/              # Zustand stores
-│   │   ├── gameStore.ts               # Game state (cards, pot, players, phase)
-│   │   ├── settingsStore.ts           # User settings (difficulty, chips, animations)
-│   │   ├── uiStore.ts                 # UI state (modals, dialogs, loading)
-│   │   └── statsStore.ts              # Session statistics (hands played, win rate)
-│   │
-│   ├── utils/                         # Shared utilities
-│   │   ├── formatters.ts              # Format numbers, chips, percentages
-│   │   ├── constants.ts               # Game constants (blind levels, timeouts)
-│   │   ├── logger.ts                  # Console logging wrapper
-│   │   └── storage.ts                 # localStorage wrapper for settings
-│   │
-│   ├── localization/                  # i18n resources
-│   │   ├── i18n.ts                    # i18next configuration
-│   │   ├── en/                        # English translations
-│   │   │   ├── game.json              # Game-related text
-│   │   │   ├── ui.json                # UI labels and buttons
-│   │   │   └── errors.json            # Error messages
-│   │   ├── vi/                        # Vietnamese (future)
-│   │   └── th/                        # Thai (future)
-│   │
-│   ├── assets/                        # Static assets
-│   │   ├── images/
-│   │   │   ├── cards/                 # Card images (PNG/SVG)
-│   │   │   ├── avatars/               # Bot avatars
-│   │   │   ├── chips/                 # Chip graphics
-│   │   │   └── table/                 # Table textures
-│   │   └── sounds/                    # Sound effects (optional)
-│   │       ├── card-deal.mp3
-│   │       ├── chip-slide.mp3
-│   │       ├── win-celebration.mp3
-│   │       └── timer-tick.mp3
-│   │
-│   ├── App.tsx                        # Root component
-│   ├── main.tsx                       # Entry point (React render)
-│   └── vite-env.d.ts                  # Vite type definitions
+│   └── app.html                       # HTML template (SvelteKit)
 │
-├── tests/                             # Test files (mirror src structure)
+├── tests/                             # Test files (Vitest + Playwright)
 │   ├── unit/
-│   │   ├── game-logic/                # Game engine tests
+│   │   ├── game-logic/                # Game engine tests (Vitest)
 │   │   │   ├── HandEvaluator.test.ts  # Hand ranking tests (200+ cases)
 │   │   │   ├── PotCalculator.test.ts  # Side pot tests (50+ edge cases)
 │   │   │   ├── BettingRules.test.ts   # Min raise, all-in validation
 │   │   │   └── GameStateMachine.test.ts # Phase transitions
-│   │   └── bot-ai/                    # Bot AI tests
+│   │   └── bot-ai/                    # Bot AI tests (Vitest)
 │   │       ├── EasyStrategy.test.ts   # Verify Easy bot behavior
 │   │       ├── MediumStrategy.test.ts # Verify Medium bot behavior
 │   │       └── HardStrategy.test.ts   # Verify Hard bot behavior
@@ -228,42 +297,53 @@ standalone-poker-game/
 │   │   ├── MultiplayerAllIn.test.ts   # 3+ player all-in scenarios
 │   │   ├── HeadsUpRules.test.ts       # 2-player special rules
 │   │   └── BotVsBot.test.ts           # Bot-only games (validate balance)
-│   └── components/
-│       ├── PokerTable.test.tsx        # Table rendering tests
-│       ├── ActionButtons.test.tsx     # Button interactions
-│       └── RaiseSlider.test.tsx       # Slider validation
+│   ├── components/                    # Component tests (Vitest + @testing-library/svelte)
+│   │   ├── PokerTable.test.ts         # Table rendering tests
+│   │   ├── ActionButtons.test.ts      # Button interactions
+│   │   └── RaiseSlider.test.ts        # Slider validation
+│   └── e2e/                           # End-to-end tests (Playwright)
+│       ├── game-flow.spec.ts          # Complete game flow
+│       ├── settings.spec.ts           # Settings persistence
+│       └── accessibility.spec.ts      # A11y testing
 │
-├── public/                            # Public assets (served as-is)
-│   ├── index.html                     # HTML entry point
-│   └── favicon.ico                    # App icon
+├── static/                            # Static assets (SvelteKit convention)
+│   ├── favicon.ico                    # App icon
+│   └── robots.txt                     # SEO robots file
 │
 ├── docs/                              # Documentation
 │   ├── ARCHITECTURE.md                # Technical architecture guide
 │   ├── GAME_RULES.md                  # Poker rules reference
 │   ├── BOT_AI.md                      # Bot strategy documentation
-│   └── DEVELOPMENT.md                 # Development setup guide
+│   ├── DEVELOPMENT.md                 # Development setup guide
+│   └── SVELTE_MIGRATION.md            # Migration notes from React (if applicable)
 │
 ├── .github/                           # GitHub configuration
 │   └── workflows/
-│       ├── test.yml                   # Run tests on push
-│       └── deploy.yml                 # Deploy to GitHub Pages
+│       ├── test.yml                   # Run Vitest tests on push
+│       ├── e2e.yml                    # Run Playwright E2E tests
+│       └── deploy.yml                 # Deploy to Vercel/Netlify
 │
 ├── package.json                       # NPM dependencies and scripts
 ├── tsconfig.json                      # TypeScript configuration (strict mode)
-├── vite.config.ts                     # Vite build configuration
+├── svelte.config.js                   # SvelteKit configuration
+├── vite.config.ts                     # Vite build configuration (with Svelte plugin)
 ├── tailwind.config.js                 # Tailwind CSS configuration
-├── jest.config.js                     # Jest test configuration
-├── .eslintrc.js                       # ESLint rules
-├── .prettierrc                        # Prettier formatting
+├── vitest.config.ts                   # Vitest test configuration (replaces jest.config.js)
+├── playwright.config.ts               # Playwright E2E configuration
+├── .eslintrc.cjs                      # ESLint rules (Svelte plugin)
+├── .prettierrc                        # Prettier formatting (Svelte plugin)
 ├── README.md                          # Project overview and setup
 └── CLAUDE.md                          # Instructions for Claude Code
 ```
 
 **Structure Rationale**:
-- **Clear Separation**: UI (presentation), game logic (pure TypeScript), bot AI (decision-making)
+- **Clear Separation**: UI (Svelte components), game logic (pure TypeScript), bot AI (decision-making)
+- **Framework Agnostic Core**: Game logic and bot AI in pure TypeScript, can be reused with any framework
+- **SvelteKit Conventions**: Uses lib/ for shared code, routes/ for file-based routing, static/ for assets
 - **Testability**: Pure functions in game logic easy to unit test without UI dependencies
 - **Scalability**: Modular structure allows adding features (new bot strategies, game modes) without refactoring
 - **Type Safety**: TypeScript strict mode across all modules ensures correctness
+- **Performance**: Svelte's compile-time optimizations + smaller bundles = faster load and runtime
 
 ---
 
@@ -446,10 +526,13 @@ const tagBot: BotPersonality = {
 
 ### 0.4 State Management Architecture
 
-**Decision**: Zustand with separate stores
+**Decision**: Svelte Stores (Native, No External Library)
 
-**Game Store** (src/state-management/gameStore.ts):
+**Game Store** (src/lib/stores/gameStore.ts):
 ```typescript
+import { writable } from 'svelte/store';
+import type { Player, Card, PotStructure, Action } from '$lib/game-logic/models';
+
 interface GameState {
   phase: 'menu' | 'playing' | 'game-over';
   gamePhase: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
@@ -465,34 +548,52 @@ interface GameState {
   actionHistory: Action[];
 }
 
-export const useGameStore = create<GameState>((set) => ({
-  // ... initial state
+// Create writable store with initial state
+export const gameStore = writable<GameState>({
+  phase: 'menu',
+  gamePhase: 'preflop',
+  players: [],
+  communityCards: [],
+  pot: { mainPot: 0, sidePots: [], totalPot: 0 },
+  currentPlayerIndex: 0,
+  dealerIndex: 0,
+  smallBlind: 10,
+  bigBlind: 20,
+  deck: [],
+  burnedCards: [],
+  actionHistory: []
+});
 
-  // Actions
-  startNewGame: (settings: GameSettings) => set(state => {
+// Helper functions to update state
+export function startNewGame(settings: GameSettings) {
+  gameStore.update(state => ({
+    ...state,
     // Initialize game with settings
-  }),
+  }));
+}
 
-  dealCards: () => set(state => {
+export function dealCards() {
+  gameStore.update(state => ({
+    ...state,
     // Deal hole cards to all players
-  }),
+  }));
+}
 
-  applyAction: (action: Action) => set(state => {
+export function applyAction(action: Action) {
+  gameStore.update(state => ({
+    ...state,
     // Process player action, update state
-  }),
+  }));
+}
 
-  advancePhase: () => set(state => {
-    // Move to next phase (flop→turn→river→showdown)
-  }),
-
-  completeHand: () => set(state => {
-    // Award pot, rotate dealer, start next hand
-  })
-}));
+// Usage in components: $gameStore.players (auto-subscribes)
 ```
 
-**Settings Store** (src/state-management/settingsStore.ts):
+**Settings Store with Persistence** (src/lib/stores/settingsStore.ts):
 ```typescript
+import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
+
 interface Settings {
   numBots: number;
   botDifficulty: 'easy' | 'medium' | 'hard' | 'mixed';
@@ -505,21 +606,52 @@ interface Settings {
   language: 'en' | 'vi' | 'th' | 'zh';
 }
 
-export const useSettingsStore = create(persist<Settings>((set) => ({
-  // ... default settings
+const defaultSettings: Settings = {
+  numBots: 5,
+  botDifficulty: 'mixed',
+  startingChips: 1000,
+  blindLevel: { small: 10, big: 20 },
+  actionTimer: 30,
+  animationSpeed: 'normal',
+  soundEffects: true,
+  cardBackDesign: 'blue',
+  language: 'en'
+};
 
-  updateSettings: (newSettings: Partial<Settings>) => set(state => ({
-    ...state,
-    ...newSettings
-  }))
-}), {
-  name: 'poker-game-settings', // localStorage key
-  storage: createJSONStorage(() => localStorage)
-}));
+// Load from localStorage or use defaults
+const storedSettings = browser
+  ? JSON.parse(localStorage.getItem('poker-settings') || JSON.stringify(defaultSettings))
+  : defaultSettings;
+
+// Create store with localStorage sync
+function createSettingsStore() {
+  const { subscribe, set, update } = writable<Settings>(storedSettings);
+
+  return {
+    subscribe,
+    set: (value: Settings) => {
+      if (browser) localStorage.setItem('poker-settings', JSON.stringify(value));
+      set(value);
+    },
+    update: (fn: (value: Settings) => Settings) => {
+      update((current) => {
+        const updated = fn(current);
+        if (browser) localStorage.setItem('poker-settings', JSON.stringify(updated));
+        return updated;
+      });
+    }
+  };
+}
+
+export const settingsStore = createSettingsStore();
+
+// Usage: $settingsStore.numBots, settingsStore.update(s => ({ ...s, numBots: 6 }))
 ```
 
-**UI Store** (src/state-management/uiStore.ts):
+**UI Store** (src/lib/stores/uiStore.ts):
 ```typescript
+import { writable } from 'svelte/store';
+
 interface UIState {
   isSettingsOpen: boolean;
   isStatsOpen: boolean;
@@ -527,19 +659,41 @@ interface UIState {
   winnerData: WinnerData | null;
   toast: { message: string; type: 'info' | 'error' | 'success' } | null;
 }
+
+export const uiStore = writable<UIState>({
+  isSettingsOpen: false,
+  isStatsOpen: false,
+  showWinnerAnnouncement: false,
+  winnerData: null,
+  toast: null
+});
+
+// Helper functions
+export function showToast(message: string, type: 'info' | 'error' | 'success') {
+  uiStore.update(state => ({ ...state, toast: { message, type } }));
+  setTimeout(() => {
+    uiStore.update(state => ({ ...state, toast: null }));
+  }, 3000);
+}
 ```
 
-**Rationale**: Zustand is lighter than Redux, perfect for client-side, built-in persist for settings
+**Rationale**:
+- Svelte stores are built-in, no external library needed
+- Automatic subscription with `$` prefix in components
+- Custom stores easy to create (localStorage persistence)
+- Lighter bundle size than Zustand
+- Better performance (no proxy overhead)
+- TypeScript support out of the box
 
 ---
 
 ### 0.5 Animation Strategy
 
-**Approach**: CSS keyframe animations + React state transitions
+**Approach**: CSS keyframes + Svelte transitions (built-in)
 
 **Card Dealing Animation**:
 ```css
-/* src/presentation/styles/animations.css */
+/* Global CSS or scoped in component */
 @keyframes card-deal {
   0% {
     transform: translate(0, 0) scale(0.5);
@@ -576,34 +730,56 @@ interface UIState {
 }
 ```
 
-**React Integration**:
-```typescript
-// src/presentation/components/game/CommunityCards.tsx
-const CommunityCards: React.FC = () => {
-  const { communityCards, gamePhase } = useGameStore();
-  const [animatingCards, setAnimatingCards] = useState<Card[]>([]);
+**Svelte Integration** (using built-in transitions):
+```svelte
+<!-- src/lib/components/game/CommunityCards.svelte -->
+<script lang="ts">
+  import { fade, fly } from 'svelte/transition';
+  import { gameStore } from '$lib/stores/gameStore';
+  import PlayingCard from '../cards/PlayingCard.svelte';
 
-  useEffect(() => {
-    if (gamePhase === 'flop' && communityCards.length === 3) {
-      // Trigger flop animation
-      setAnimatingCards(communityCards.slice(0, 3));
-      setTimeout(() => setAnimatingCards([]), 500);
-    }
-  }, [gamePhase, communityCards]);
+  // Auto-subscribe to store with $ prefix
+  $: communityCards = $gameStore.communityCards;
+  $: gamePhase = $gameStore.gamePhase;
 
-  return (
-    <div className="community-cards">
-      {communityCards.map((card, i) => (
-        <PlayingCard
-          key={i}
-          card={card}
-          className={animatingCards.includes(card) ? 'card-dealing' : ''}
-        />
-      ))}
+  // Reactive statement - runs when gamePhase changes
+  $: if (gamePhase === 'flop' && communityCards.length === 3) {
+    // Trigger animation automatically
+  }
+</script>
+
+<div class="community-cards">
+  {#each communityCards as card, i (card.id)}
+    <div
+      class="card-wrapper"
+      in:fly="{{ x: -200, duration: 500, delay: i * 100 }}"
+      out:fade
+    >
+      <PlayingCard {card} />
     </div>
-  );
-};
+  {/each}
+</div>
+
+<style>
+  .community-cards {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card-wrapper {
+    position: relative;
+  }
+</style>
 ```
+
+**Benefits of Svelte Animations**:
+- Built-in transitions (fade, fly, slide, scale) - no library needed
+- Custom transitions easy to create
+- Per-element delay automatically coordinated
+- Better performance than React (no VDOM overhead)
+- Simpler syntax (no useEffect, useState boilerplate)
 
 **Animation Settings**:
 - **Off**: No animations, instant updates
@@ -634,34 +810,52 @@ const CommunityCards: React.FC = () => {
 - Raise slider: Min/max validation, quick-bet buttons
 - Timer: Countdown, auto-action on expiration
 
-**Test Framework Setup**:
+**Test Framework Setup** (Vitest):
 ```typescript
-// jest.config.js
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom', // For React components
-  coverageThreshold: {
-    global: {
-      statements: 80,
-      branches: 75,
-      functions: 80,
-      lines: 80
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+
+export default defineConfig({
+  plugins: [svelte({ hot: !process.env.VITEST })],
+  test: {
+    globals: true,
+    environment: 'jsdom', // For Svelte component testing
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80
+      },
+      include: [
+        'src/lib/game-logic/**/*.ts',
+        'src/lib/stores/**/*.ts',
+        'src/lib/components/**/*.svelte'
+      ],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.spec.ts',
+        '**/node_modules/**'
+      ]
     }
-  },
-  collectCoverageFrom: [
-    'src/game-logic/**/*.ts',
-    'src/bot-ai/**/*.ts',
-    'src/presentation/components/**/*.tsx',
-    '!**/*.test.ts',
-    '!**/*.test.tsx'
-  ]
-};
+  }
+});
 ```
 
-**TDD Workflow**:
+**TDD Workflow** (Same process, 10x faster with Vitest):
 1. **RED**: Write failing test
 2. **GREEN**: Write minimum code to pass
 3. **REFACTOR**: Clean up while keeping tests green
+
+**Vitest Benefits**:
+- 10x faster than Jest (native ESM, no transpilation)
+- Same API as Jest (easy migration)
+- Built for Vite (instant HMR in test mode)
+- Better error messages and stack traces
+- Native TypeScript support
 
 ---
 
@@ -669,50 +863,55 @@ module.exports = {
 
 ### Goals
 - Project initialized with all dependencies
-- Build system working (Vite + TypeScript + React)
-- Test infrastructure ready (Jest + React Testing Library)
+- Build system working (Vite + TypeScript + Svelte + SvelteKit)
+- Test infrastructure ready (Vitest + Playwright + @testing-library/svelte)
 - Basic project structure created
 - Linting and formatting configured
 - Development environment verified
 
 ### Deliverables
 1. **Project Initialization**
-   - Run `npm create vite@latest standalone-poker-game -- --template react-ts`
-   - Install dependencies: `react`, `react-dom`, `typescript`, `vite`
-   - Install Zustand: `npm install zustand`
-   - Install Tailwind: `npm install -D tailwindcss postcss autoprefixer`
-   - Install Lucide React: `npm install lucide-react`
-   - Install pokersolver: `npm install pokersolver`
-   - Install TypeScript types: `npm install --save-dev @types/pokersolver`
-   - Install i18next: `npm install react-i18next i18next`
+   - Run `npm create svelte@latest standalone-poker-game`
+     - Choose: SvelteKit skeleton project
+     - Select: Yes for TypeScript
+     - Select: Yes for ESLint
+     - Select: Yes for Prettier
+     - Select: Yes for Playwright
+     - Select: Yes for Vitest
+   - Run `cd standalone-poker-game && npm install`
+   - Install Tailwind: `npx svelte-add@latest tailwindcss`
+   - Install Lucide Svelte: `npm install lucide-svelte`
+   - Install pokersolver: `npm install pokersolver @types/pokersolver`
+   - Install typesafe-i18n: `npm install -D typesafe-i18n` and run `npx typesafe-i18n --setup-auto`
 
-2. **Test Infrastructure**
-   - Install Jest: `npm install -D jest ts-jest @types/jest`
-   - Install React Testing Library: `npm install -D @testing-library/react @testing-library/jest-dom @testing-library/user-event`
-   - Configure jest.config.js with coverage thresholds
+2. **Test Infrastructure** (Already included by SvelteKit, just configure)
+   - Vitest pre-installed - configure vitest.config.ts with coverage thresholds
+   - Playwright pre-installed - configure playwright.config.ts for E2E tests
+   - Install @testing-library/svelte: `npm install -D @testing-library/svelte`
    - Create test utilities (setup file, custom matchers)
 
 3. **Build Configuration**
-   - Configure vite.config.ts (plugins, build options, code-splitting)
+   - Configure svelte.config.js (adapter, preprocess, kit options)
+   - Configure vite.config.ts (Svelte plugin, build options, code-splitting)
    - Configure tsconfig.json (strict mode, paths, exclude)
-   - Configure Tailwind CSS (tailwind.config.js, global styles)
+   - Tailwind already configured by svelte-add
 
-4. **Code Quality Tools**
-   - Install ESLint: `npm install -D eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser`
-   - Install Prettier: `npm install -D prettier eslint-config-prettier`
-   - Configure .eslintrc.js (TypeScript rules, React rules)
-   - Configure .prettierrc (formatting rules)
-   - Add pre-commit hooks (Husky + lint-staged)
+4. **Code Quality Tools** (Partially done by SvelteKit)
+   - ESLint pre-configured - update .eslintrc.cjs to add Svelte rules
+   - Prettier pre-configured - update .prettierrc to add Svelte plugin
+   - Install prettier-plugin-svelte: `npm install -D prettier-plugin-svelte`
+   - Add pre-commit hooks: `npm install -D husky lint-staged`
 
 5. **Project Structure**
-   - Create folder structure (src/presentation, src/game-logic, src/bot-ai, tests/)
+   - Create folder structure (src/lib/components, src/lib/stores, src/lib/game-logic, tests/)
    - Create placeholder files with TypeScript interfaces
-   - Set up barrel exports (index.ts files)
+   - Set up proper imports with $lib alias (already configured)
 
 6. **Documentation**
    - Write README.md (project overview, setup, scripts)
-   - Write ARCHITECTURE.md (high-level design)
+   - Write ARCHITECTURE.md (high-level design, Svelte-specific patterns)
    - Write CLAUDE.md (instructions for Claude Code)
+   - Write SVELTE_BENEFITS.md (why Svelte over React for this project)
 
 7. **Verification**
    - Run `npm run dev` - dev server starts successfully
