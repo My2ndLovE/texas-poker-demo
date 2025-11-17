@@ -10,13 +10,18 @@
 
 **Total Tasks**: 201 tasks across 7 phases (14 new tasks added)
 **Timeline**: 8-9 weeks (solo developer, 20-30 hours/week)
-**Total Estimated Hours**: 206.5 hours
+**Total Estimated Hours**: 204 hours
 
 **New Features Added**:
-- Preflop equity table and post-flop Monte Carlo calculator
+- Preflop equity table and built-in odds calculator (poker-evaluator)
 - Opponent stat tracking for Medium/Hard bots
 - Multi-device responsive design (desktop/tablet/mobile landscape)
 - Game state auto-save to localStorage
+
+**Key Technology Update**:
+- Switched to poker-evaluator (22M hands/sec, built-in odds calculator)
+- Eliminated need for custom Monte Carlo simulation (-2.5h)
+- Simplified equity calculation with winningOddsForPlayer()
 
 ---
 
@@ -25,7 +30,7 @@
 | Phase | Tasks | Hours | Description |
 |-------|-------|-------|-------------|
 | Phase 1 | 22 tasks | 10h | Foundation & Setup |
-| Phase 2 | 66 tasks | 52h | Game Logic Core (+ equity calculator) |
+| Phase 2 | 66 tasks | 49.5h | Game Logic Core (+ poker-evaluator equity calculator) |
 | Phase 3 | 32 tasks | 30h | Bot AI Implementation (+ opponent tracking) |
 | Phase 4 | 38 tasks | 39h | UI Components (+ responsive design) |
 | Phase 5 | 21 tasks | 31.5h | Integration & Polish (+ auto-save) |
@@ -75,7 +80,7 @@ Every task marked with [TDD] MUST follow this cycle:
   - Install Zustand: `npm install zustand`
   - Install Tailwind CSS: `npm install -D tailwindcss postcss autoprefixer`
   - Install Lucide React: `npm install lucide-react`
-  - Install pokersolver: `npm install pokersolver @types/pokersolver`
+  - Install poker-evaluator: `npm install poker-evaluator-ts`
   - Install i18next: `npm install react-i18next i18next`
   - **Acceptance**: All dependencies installed, no conflicts
 
@@ -319,13 +324,14 @@ Every task marked with [TDD] MUST follow this cycle:
 
 ### Hand Evaluation (T031-T038) [10h]
 
-- [ ] **T031** [TDD] [2h] Set up pokersolver wrapper
+- [ ] **T031** [TDD] [2h] Set up poker-evaluator wrapper
   - **RED**: Write test `tests/unit/game-logic/HandEvaluator.test.ts`
     - Test evaluating Royal Flush
     - Test evaluating High Card
   - **GREEN**: Create `src/game-logic/evaluation/HandEvaluator.ts`
-    - Wrap pokersolver library
-    - Convert Card[] to pokersolver format
+    - Wrap poker-evaluator library (import from 'poker-evaluator-ts')
+    - Convert Card[] to poker-evaluator format (e.g., "As", "Kh")
+    - Use evalHand() function to evaluate hands
     - Return HandResult interface
   - **REFACTOR**: Add type safety
   - **Acceptance**: Basic hand evaluation works
@@ -342,7 +348,7 @@ Every task marked with [TDD] MUST follow this cycle:
     - Two Pair (10 cases)
     - One Pair (10 cases)
     - High Card (10 cases)
-  - **GREEN**: Verify pokersolver handles all correctly
+  - **GREEN**: Verify poker-evaluator handles all correctly (Two Plus Two algorithm)
   - **REFACTOR**: Create test data generator
   - **Acceptance**: All 100+ hand tests pass
 
@@ -353,7 +359,7 @@ Every task marked with [TDD] MUST follow this cycle:
     - Same straight, different high cards
     - Same flush, kicker comparison
     - Full house tie-breaking
-  - **GREEN**: Verify pokersolver tie-breaking
+  - **GREEN**: Verify poker-evaluator tie-breaking (kicker comparison)
   - **REFACTOR**: Organize test cases
   - **Acceptance**: Tie-breaking works correctly
 
@@ -364,7 +370,7 @@ Every task marked with [TDD] MUST follow this cycle:
     - Test all hand rank combinations (45 combinations)
   - **GREEN**: Implement `src/game-logic/evaluation/HandComparator.ts`
     - `compareHands(hand1, hand2): number` (returns 1, 0, -1)
-  - **REFACTOR**: Use pokersolver winners function
+  - **REFACTOR**: Compare hand values (lower value = better in poker-evaluator)
   - **Acceptance**: Hand comparison accurate
 
 - [ ] **T035** [TDD] [1h] Implement BestHandFinder
@@ -373,7 +379,7 @@ Every task marked with [TDD] MUST follow this cycle:
     - Test edge cases (2 possible straights, choose higher)
   - **GREEN**: Implement `src/game-logic/evaluation/BestHandFinder.ts`
     - `findBestHand(cards: Card[]): HandResult`
-  - **REFACTOR**: Delegate to pokersolver
+  - **REFACTOR**: Delegate to poker-evaluator's evalHand()
   - **Acceptance**: Best hand identified correctly
 
 - [ ] **T036** [0.5h] Create HandResult interface
@@ -401,25 +407,24 @@ Every task marked with [TDD] MUST follow this cycle:
   - **REFACTOR**: Organize equity values by hand category
   - **Acceptance**: Preflop equity table complete with 100% coverage
 
-- [ ] **T037.6** [TDD] [3h] Implement post-flop equity calculator (Monte Carlo)
-  - **RED**: Write test `tests/unit/workers/equityCalculator.test.ts`
-    - Test Monte Carlo simulation with known scenarios (flush vs pair)
-    - Test accuracy within ±2% after 1000 iterations
+- [ ] **T037.6** [TDD] [1h] Implement post-flop equity calculator using poker-evaluator
+  - **RED**: Write test `tests/unit/utils/equityCalculator.test.ts`
+    - Test equity calculation with known scenarios (flush vs pair)
     - Test different board states (flop, turn, river)
-  - **GREEN**: Create `src/workers/equityCalculator.worker.ts`
-    - Implement Monte Carlo simulation (1000 iterations)
-    - Deal random opponent hands from remaining deck
-    - Evaluate winners using pokersolver
-    - Calculate equity as (wins + ties/2) / iterations
-  - **REFACTOR**: Optimize deck creation, add comments
-  - **Acceptance**: Equity calculator accurate within ±2%
+    - Test edge cases (no community cards, all 5 community cards)
+  - **GREEN**: Create `src/utils/equityCalculator.ts`
+    - Use poker-evaluator's winningOddsForPlayer() function
+    - Convert Card[] to poker-evaluator format (e.g., "As", "Kh")
+    - Return equity as 0-1 (e.g., 0.72 for 72%)
+    - Add getEquityWithLabel() helper for qualitative labels
+  - **REFACTOR**: Add type safety, JSDoc comments
+  - **Acceptance**: Equity calculator returns accurate probabilities
 
-- [ ] **T037.7** [1h] Set up Web Worker for non-blocking equity calculation
-  - Create Web Worker wrapper in UI components
-  - Implement worker message passing (request/response)
-  - Add worker termination after calculation
-  - Test that UI remains responsive during calculation
-  - **Acceptance**: Equity calculation non-blocking (<100ms UI responsiveness)
+- [ ] **T037.7** [0.5h] Test equity calculator performance
+  - Benchmark calculation time (<10ms expected)
+  - Test multiple rapid calculations (simulate UI updates)
+  - Verify no UI blocking (runs synchronously but fast enough)
+  - **Acceptance**: Equity calculation fast enough for main thread (<10ms)
 
 - [ ] **T037.8** [1h] Create hand strength indicator component
   - Create `src/presentation/components/game/HandStrengthIndicator.tsx`
@@ -852,7 +857,7 @@ Every task marked with [TDD] MUST follow this cycle:
 - [ ] **T083** [1h] Performance benchmarking
   - Run 1000 complete hands, measure time
   - Verify <1 second total (average <1ms per hand)
-  - Profile hand evaluation (verify using pokersolver is fast)
+  - Profile hand evaluation (verify poker-evaluator achieves 22M hands/sec)
   - **Acceptance**: Performance acceptable
 
 - [ ] **T084** [1h] Documentation update
@@ -2108,7 +2113,8 @@ Use TodoWrite tool to track task completion:
 
 ---
 
-**Tasks Version**: 1.1 (Updated with new features)
+**Tasks Version**: 1.2 (Updated with poker-evaluator)
 **Last Updated**: 2025-11-18
 **Status**: Ready for execution
-**Total Estimated Hours**: 206.5 hours (18.5 hours added for new features)
+**Total Estimated Hours**: 204 hours
+**Key Update**: Switched to poker-evaluator (22M hands/sec, built-in odds calculator, -2.5h vs original plan)
