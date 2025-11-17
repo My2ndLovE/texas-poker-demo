@@ -236,11 +236,18 @@ export class GameEngine {
   private advancePhase(state: GameState): GameState {
     const newState = { ...state };
 
+    // Check if only one player remains - they win immediately
+    const playersInHand = getPlayersInHand(newState);
+    if (playersInHand.length <= 1) {
+      return this.resolveShowdown(newState);
+    }
+
     // Reset current bets
     newState.players.forEach((p) => {
       p.currentBet = 0;
     });
     newState.currentBet = 0;
+    newState.minRaise = newState.settings.bigBlind;
 
     // Advance phase
     switch (newState.phase) {
@@ -267,8 +274,17 @@ export class GameEngine {
         return this.resolveShowdown(newState);
     }
 
-    // Set first to act post-flop
+    // Reset lastActionIndex for new betting round
+    newState.lastActionIndex = -1;
+
+    // Set first to act post-flop (first active player after dealer)
     newState.currentPlayerIndex = positionRules.getFirstToActPostFlop(newState);
+
+    // Edge case: if no one can act (all folded/all-in), go to next phase immediately
+    const activePlayers = playersInHand.filter((p) => p.status === 'active');
+    if (activePlayers.length === 0) {
+      return this.advancePhase(newState);
+    }
 
     return newState;
   }
@@ -283,17 +299,25 @@ export class GameEngine {
       return newState;
     }
 
-    // If only one player, they win
+    // Calculate pot first
+    const pot = potCalculator.calculatePots(newState.players);
+
+    // If only one player, they win (everyone else folded)
     if (playersInHand.length === 1) {
       const winner = playersInHand[0];
-      const pot = potCalculator.calculatePots(newState.players);
       winner.chips += pot.totalPot;
       newState.phase = 'complete';
       return newState;
     }
 
+    // Make sure we have 5 community cards for evaluation
+    // If everyone is all-in before river, deal remaining cards
+    while (newState.communityCards.length < 5) {
+      this.deck.burn();
+      newState.communityCards.push(...this.deck.dealMultiple(1));
+    }
+
     // Evaluate hands and find winners
-    const pot = potCalculator.calculatePots(newState.players);
     const playerHands = playersInHand.map((p) => ({
       playerId: p.id,
       cards: [...p.holeCards, ...newState.communityCards],

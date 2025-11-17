@@ -34,12 +34,17 @@ export class BettingRules {
     const canCheck = callAmount === 0;
     const canCall = callAmount > 0 && callAmount < player.chips;
     const canBet = state.currentBet === 0 && player.chips > 0;
-    const canRaise = state.currentBet > 0 && player.chips > callAmount;
 
     // Min raise is current bet + at least the size of the previous raise
     // (or big blind if no raises yet)
-    const minRaise = state.currentBet + state.minRaise;
+    const minRaiseAmount = state.currentBet + state.minRaise;
     const maxRaise = player.chips;
+
+    // Can only raise if player has enough chips for the minimum raise
+    // Player needs: callAmount + additional raise amount
+    const canRaise = state.currentBet > 0 &&
+                     player.chips > callAmount &&
+                     (player.currentBet + player.chips) >= minRaiseAmount;
 
     return {
       canFold: true, // Can always fold
@@ -49,7 +54,7 @@ export class BettingRules {
       canRaise,
       canAllIn: player.chips > 0,
       callAmount,
-      minRaise: Math.min(minRaise, maxRaise),
+      minRaise: Math.min(minRaiseAmount, maxRaise),
       maxRaise,
     };
   }

@@ -4,17 +4,18 @@ import { PotStructure, SidePot } from '../models/Pot';
 export class PotCalculator {
   // Calculate main pot and side pots from player bets
   calculatePots(players: Player[]): PotStructure {
-    // Filter active players (not folded, have bet)
-    const activePlayers = players.filter(
-      (p) => isPlayerInHand(p) && p.totalBet > 0
-    );
+    // Get all players who have bet (including folded - they contributed to pot)
+    const playersWithBets = players.filter((p) => p.totalBet > 0);
 
-    if (activePlayers.length === 0) {
+    if (playersWithBets.length === 0) {
       return { mainPot: 0, sidePots: [], totalPot: 0 };
     }
 
-    // Sort by total bet amount (ascending)
-    const sorted = [...activePlayers].sort((a, b) => a.totalBet - b.totalBet);
+    // Players still in hand (eligible to win)
+    const playersInHand = playersWithBets.filter((p) => isPlayerInHand(p));
+
+    // Sort ALL players by bet amount (including folded) to calculate pot correctly
+    const sorted = [...playersWithBets].sort((a, b) => a.totalBet - b.totalBet);
 
     const pots: SidePot[] = [];
     let previousBet = 0;
@@ -24,9 +25,12 @@ export class PotCalculator {
       const contribution = currentBet - previousBet;
 
       if (contribution > 0) {
-        // Players from index i onwards are eligible
-        const eligiblePlayers = sorted.slice(i);
-        const potAmount = contribution * eligiblePlayers.length;
+        // Calculate pot from ALL remaining players (including folded)
+        const remainingPlayers = sorted.slice(i);
+        const potAmount = contribution * remainingPlayers.length;
+
+        // But only players still in hand are eligible to win
+        const eligiblePlayers = remainingPlayers.filter((p) => isPlayerInHand(p));
 
         pots.push({
           amount: potAmount,

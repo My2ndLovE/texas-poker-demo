@@ -91,9 +91,26 @@ export class PositionRules {
     };
   }
 
-  // Get first to act post-flop (first active player after dealer)
+  // Get first to act post-flop (first active player after dealer who can act)
   getFirstToActPostFlop(state: GameState): number {
-    return this.getNextActivePlayerIndex(state.players, state.dealerIndex);
+    let currentIndex = state.dealerIndex;
+    let attempts = 0;
+
+    while (attempts < state.players.length) {
+      currentIndex = this.getNextActivePlayerIndex(state.players, currentIndex);
+
+      if (currentIndex === -1) return -1;
+
+      const player = state.players[currentIndex];
+      // Find first player who is active (can still act)
+      if (player.status === 'active') {
+        return currentIndex;
+      }
+
+      attempts++;
+    }
+
+    return -1; // No active players found
   }
 
   // Check if all players have acted in current betting round
