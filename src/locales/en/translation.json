@@ -1,0 +1,40 @@
+{
+  "menu": {
+    "title": "Texas Hold'em",
+    "subtitle": "Play poker with intelligent bot opponents",
+    "quickPlay": "Quick Play",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Game Settings",
+    "numBots": "Number of Bots",
+    "botDifficulty": "Bot Difficulty",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "mixed": "Mixed",
+    "startingChips": "Starting Chips",
+    "blinds": "Blinds",
+    "smallBlind": "Small Blind",
+    "bigBlind": "Big Blind",
+    "startGame": "Start Game",
+    "back": "Back"
+  },
+  "game": {
+    "pot": "Pot",
+    "fold": "Fold",
+    "check": "Check",
+    "call": "Call",
+    "raise": "Raise",
+    "allIn": "All-In",
+    "folded": "Folded",
+    "yourTurn": "Your Turn",
+    "waiting": "Waiting..."
+  },
+  "gameOver": {
+    "title": "Game Over",
+    "won": "Congratulations! You won!",
+    "lost": "Better luck next time!",
+    "returnToMenu": "Return to Menu"
+  }
+}

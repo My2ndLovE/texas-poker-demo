@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply h-full;
+  }
+
+  body {
+    @apply h-full bg-gray-900 text-white font-sans antialiased;
+  }
+
+  #root {
+    @apply h-full;
+  }
+}
+
+@layer utilities {
+  /* Custom poker-specific utilities */
+  .felt-texture {
+    background: linear-gradient(135deg, #0d5c2f 0%, #094a25 100%);
+  }
+
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  }
+
+  .chip-shadow {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+}
