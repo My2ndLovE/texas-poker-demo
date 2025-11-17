@@ -1,4 +1,5 @@
 import { Player } from '../models/Player';
+import { PlayerStatus } from '@/utils/constants';
 
 export class PositionRules {
   calculatePositions(players: Player[], dealerIndex: number): Player[] {
@@ -79,8 +80,12 @@ export class PositionRules {
     let nextIndex = (currentIndex + 1) % players.length;
     let iterations = 0;
 
-    // Find next player who hasn't folded
-    while (foldedPlayerIds.has(players[nextIndex].id) && iterations < players.length) {
+    // Find next player who hasn't folded and isn't all-in
+    while (
+      (foldedPlayerIds.has(players[nextIndex].id) ||
+        players[nextIndex].status === PlayerStatus.AllIn) &&
+      iterations < players.length
+    ) {
       nextIndex = (nextIndex + 1) % players.length;
       iterations++;
     }

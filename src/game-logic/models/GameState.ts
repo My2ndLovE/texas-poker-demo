@@ -4,6 +4,16 @@ import { Action } from './Action';
 import { GamePhase } from '@/utils/constants';
 import type { PotResult } from '../pot/PotCalculator';
 
+export interface HandWinners {
+  winners: Array<{
+    playerId: string;
+    playerName: string;
+    amount: number;
+    handDescription?: string;
+  }>;
+  showdown: boolean; // true if went to showdown, false if everyone folded
+}
+
 export interface GameState {
   phase: GamePhase;
   players: Player[];
@@ -19,6 +29,7 @@ export interface GameState {
   burnedCards: Card[];
   actionHistory: Action[];
   handNumber: number;
+  handResult?: HandWinners; // Result of the last completed hand
 }
 
 export const createInitialGameState = (

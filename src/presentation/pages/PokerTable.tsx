@@ -122,6 +122,29 @@ export const PokerTable: React.FC = () => {
         {gameState.phase === GamePhase.HandComplete && (
           <div className="bg-green-800 text-white p-6 rounded-lg text-center">
             <div className="text-2xl font-bold mb-4">Hand Complete!</div>
+
+            {/* Winner Information */}
+            {gameState.handResult && (
+              <div className="mb-6">
+                {gameState.handResult.winners.map((winner, idx) => (
+                  <div key={idx} className="text-xl mb-2">
+                    <span className="font-bold text-yellow-300">{winner.playerName}</span>
+                    {' wins '}
+                    <span className="font-bold text-green-300">${winner.amount}</span>
+                    {winner.handDescription && gameState.handResult?.showdown && (
+                      <span className="text-gray-300">
+                        {' with '}
+                        {winner.handDescription}
+                      </span>
+                    )}
+                    {gameState.handResult && !gameState.handResult.showdown && (
+                      <span className="text-gray-300"> (everyone else folded)</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button
               onClick={handleNextHand}
               className="px-8 py-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-bold text-xl transition"

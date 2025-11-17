@@ -161,7 +161,8 @@ export class GameEngine {
       updatedPlayers,
       newCurrentBet,
       nextPlayerIndex,
-      state.currentPlayerIndex
+      state.phase,
+      state.dealerIndex
     );
 
     let newState: GameState = {
@@ -241,38 +242,87 @@ export class GameEngine {
     players: Player[],
     currentBet: number,
     nextPlayerIndex: number,
-    startPlayerIndex: number
+    phase: GamePhase,
+    dealerIndex: number
   ): boolean {
-    const activePlayers = players.filter(
-      (p) => p.status === PlayerStatus.Active || p.status === PlayerStatus.AllIn
+    // Get non-folded players
+    const nonFoldedPlayers = players.filter((p) => p.status !== PlayerStatus.Folded);
+
+    // Only one player left (everyone else folded)
+    if (nonFoldedPlayers.length <= 1) {
+      return true;
+    }
+
+    // Get players who can still act (not folded, not all-in)
+    const playersWhoCanAct = players.filter(
+      (p) => p.status === PlayerStatus.Active
     );
 
-    // Only one player left
-    if (activePlayers.length <= 1) {
+    // Everyone is all-in or folded (no one left to act)
+    if (playersWhoCanAct.length === 0) {
       return true;
     }
 
-    // All players all-in
-    const nonAllInPlayers = activePlayers.filter((p) => p.status === PlayerStatus.Active);
-    if (nonAllInPlayers.length === 0) {
-      return true;
+    // Only one player can act (everyone else is all-in or folded)
+    // That player has acted if their bet matches current bet
+    if (playersWhoCanAct.length === 1) {
+      return playersWhoCanAct[0].currentBet === currentBet;
     }
 
-    // All active players have matched the current bet
-    const allMatched = nonAllInPlayers.every((p) => p.currentBet === currentBet);
+    // Multiple players can act - check if all have matched the current bet
+    const allMatched = playersWhoCanAct.every((p) => p.currentBet === currentBet);
 
-    // We've gone around the table
-    const backToStart = nextPlayerIndex === startPlayerIndex;
+    // If not all matched, betting round continues
+    if (!allMatched) {
+      return false;
+    }
 
-    return allMatched && backToStart;
+    // All matched - check if action has returned to the first player to act
+    // Calculate who was first to act in this betting round
+    let firstToActIndex: number;
+    if (phase === GamePhase.Preflop) {
+      firstToActIndex = this.positionRules.getFirstToActPreflop(players, dealerIndex);
+    } else {
+      firstToActIndex = this.positionRules.getFirstToActPostflop(players, dealerIndex);
+    }
+
+    // Betting round is complete when action returns to first player to act
+    return nextPlayerIndex === firstToActIndex;
   }
 
   private advancePhase(state: GameState): GameState {
+    // Check if only one player remains (everyone else folded)
+    // If so, go straight to showdown (hand complete)
+    const nonFoldedPlayers = state.players.filter((p) => p.status !== PlayerStatus.Folded);
+    if (nonFoldedPlayers.length <= 1) {
+      return this.handleShowdown(state);
+    }
+
+    // Check if all remaining players are all-in
+    // If so, deal all remaining community cards at once ("run it out")
+    const playersWhoCanAct = state.players.filter((p) => p.status === PlayerStatus.Active);
+    const allAllIn = playersWhoCanAct.length === 0 && nonFoldedPlayers.length > 1;
+
     // Reset current bets for next round
     const resetPlayers = state.players.map((p) => ({ ...p, currentBet: 0 }));
 
     let newPhase: GamePhase;
     let newCommunityCards = [...state.communityCards];
+
+    // If all players are all-in, deal all remaining cards and go to showdown
+    if (allAllIn) {
+      const cardsNeeded = 5 - state.communityCards.length;
+      for (let i = 0; i < cardsNeeded; i++) {
+        this.deck.burn();
+        newCommunityCards = [...newCommunityCards, ...this.deck.deal(1)];
+      }
+      return this.handleShowdown({
+        ...state,
+        players: resetPlayers,
+        communityCards: newCommunityCards,
+        phase: GamePhase.Showdown,
+      });
+    }
 
     switch (state.phase) {
       case GamePhase.Preflop:
@@ -323,10 +373,13 @@ export class GameEngine {
 
   private handleShowdown(state: GameState): GameState {
     const activePlayers = state.players.filter((p) => p.status !== PlayerStatus.Folded);
+    const winnerAmounts = new Map<string, number>();
 
     if (activePlayers.length === 1) {
-      // Only one player left - they win
+      // Only one player left - they win (everyone else folded)
       const winner = activePlayers[0];
+      winnerAmounts.set(winner.id, state.pot.totalPot);
+
       const updatedPlayers = state.players.map((p) =>
         p.id === winner.id ? { ...p, chips: p.chips + state.pot.totalPot } : p
       );
@@ -335,6 +388,16 @@ export class GameEngine {
         ...state,
         phase: GamePhase.HandComplete,
         players: updatedPlayers,
+        handResult: {
+          winners: [
+            {
+              playerId: winner.id,
+              playerName: winner.name,
+              amount: state.pot.totalPot,
+            },
+          ],
+          showdown: false,
+        },
       };
     }
 
@@ -346,6 +409,15 @@ export class GameEngine {
 
     const winnerIds = this.handEvaluator.findWinners(hands);
 
+    // Get hand descriptions for winners
+    const handDescriptions = new Map<string, string>();
+    for (const hand of hands) {
+      if (winnerIds.includes(hand.playerId)) {
+        const evaluation = this.handEvaluator.evaluateHand(hand.cards);
+        handDescriptions.set(hand.playerId, evaluation.description);
+      }
+    }
+
     // Distribute pots with proper side pot handling
     let updatedPlayers = [...state.players];
 
@@ -355,9 +427,13 @@ export class GameEngine {
     );
     if (mainPotWinners.length > 0 && state.pot.mainPot > 0) {
       const mainPotShare = Math.floor(state.pot.mainPot / mainPotWinners.length);
-      updatedPlayers = updatedPlayers.map((p) =>
-        mainPotWinners.includes(p.id) ? { ...p, chips: p.chips + mainPotShare } : p
-      );
+      updatedPlayers = updatedPlayers.map((p) => {
+        if (mainPotWinners.includes(p.id)) {
+          winnerAmounts.set(p.id, (winnerAmounts.get(p.id) || 0) + mainPotShare);
+          return { ...p, chips: p.chips + mainPotShare };
+        }
+        return p;
+      });
     }
 
     // Award each side pot to eligible winners
@@ -365,16 +441,35 @@ export class GameEngine {
       const sidePotWinners = winnerIds.filter((id) => sidePot.eligiblePlayerIds.includes(id));
       if (sidePotWinners.length > 0) {
         const sidePotShare = Math.floor(sidePot.amount / sidePotWinners.length);
-        updatedPlayers = updatedPlayers.map((p) =>
-          sidePotWinners.includes(p.id) ? { ...p, chips: p.chips + sidePotShare } : p
-        );
+        updatedPlayers = updatedPlayers.map((p) => {
+          if (sidePotWinners.includes(p.id)) {
+            winnerAmounts.set(p.id, (winnerAmounts.get(p.id) || 0) + sidePotShare);
+            return { ...p, chips: p.chips + sidePotShare };
+          }
+          return p;
+        });
       }
     }
+
+    // Build winner list for display
+    const winners = Array.from(winnerAmounts.entries()).map(([playerId, amount]) => {
+      const player = state.players.find((p) => p.id === playerId)!;
+      return {
+        playerId,
+        playerName: player.name,
+        amount,
+        handDescription: handDescriptions.get(playerId),
+      };
+    });
 
     return {
       ...state,
       phase: GamePhase.HandComplete,
       players: updatedPlayers,
+      handResult: {
+        winners,
+        showdown: true,
+      },
     };
   }
 
