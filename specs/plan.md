@@ -19,13 +19,15 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 
 ## Technical Context
 
-### Technology Stack
+### Technology Stack (Updated 2025-11-17)
+
+**Core Framework & Language**
 
 **Frontend Framework**: React 18.2+
 - **Why**: Component-based architecture perfect for complex UI (poker table, cards, actions)
 - **Hooks**: useState, useEffect, useReducer for component state
 - **Performance**: React.memo, useMemo, useCallback for optimization
-- **Styling**: Tailwind CSS for utility-first design, custom CSS for animations
+- **Styling**: Tailwind CSS + Framer Motion for professional animations
 
 **Language**: TypeScript 5.x (Strict Mode)
 - **Why**: Type safety critical for poker logic correctness
@@ -33,39 +35,169 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 - **Interfaces**: Strong typing for game state, actions, bot decisions
 - **Generics**: Reusable utility functions with type safety
 
-**State Management**: Zustand 4.x
-- **Why**: Simpler than Redux, perfect for client-side state
-- **Stores**: Separate stores for game state, UI state, settings
-- **Immer**: Built-in support for immutable state updates
-- **DevTools**: Redux DevTools integration for debugging
-
 **Build Tool**: Vite 5.x
 - **Why**: Fast development server (<100ms HMR), optimized production builds
 - **Features**: ES modules, code-splitting, tree-shaking, minification
 - **Plugins**: TypeScript, React, PostCSS (for Tailwind)
 
-**Testing Framework**: Jest 29.x + React Testing Library
-- **Unit Tests**: Game logic (hand evaluation, pot calculation, bot AI)
-- **Component Tests**: UI components (buttons, cards, table layout)
-- **Integration Tests**: Full game flows (complete hands, multiple scenarios)
-- **Coverage**: Target 80% for game logic, 60% for UI
+---
 
-**Hand Evaluation Library**: pokersolver (https://github.com/goldfire/pokersolver)
-- **Why**: Battle-tested with 2,700+ weekly downloads, used by 1,100+ repos, stable and reliable
-- **Features**: 5-7 card evaluation, hand ranking, comparison, supports multiple game types
-- **Integration**: Simple synchronous API, TypeScript types available via @types/pokersolver
-- **Performance**: Fast enough for 200+ concurrent players, no async initialization needed
-- **Adoption**: 414 GitHub stars, mature codebase, zero runtime dependencies
+**State Management** (🆕 UPGRADED)
 
-**Icons**: Lucide React
+**XState v5** - Finite State Machine Library
+- **Why**: Poker is inherently a state machine (menu → preflop → flop → turn → river → showdown)
+- **Visual State Charts**: Generate diagrams showing all possible states and transitions
+- **Impossible States Eliminated**: Type-safe transitions prevent invalid game states
+- **Better Testing**: Test state transitions in isolation
+- **Time Travel Debugging**: Replay state transitions for debugging
+- **Industry Proven**: Used by Microsoft, Amazon, Netflix
+- **DevTools**: XState Inspector for visual debugging
+
+**Immer** - Immutable State Updates
+- **Why**: Built into XState, ensures immutable state updates
+- **Simplicity**: Write mutable code, get immutable updates automatically
+
+**Migration Note**: Replaces Zustand 4.x with superior architecture for game state machines
+
+---
+
+**Testing** (🆕 UPGRADED)
+
+**Vitest** - Next Generation Testing Framework
+- **Why**: 10x faster than Jest, native Vite integration
+- **Startup**: 0.3-0.5s vs Jest's 5-10s (20x faster)
+- **HMR**: Instant test re-runs on file changes
+- **Compatibility**: 95% Jest-compatible API
+- **ESM Native**: Modern module support
+- **Config**: Shared vite.config.ts (no separate jest.config.js)
+
+**React Testing Library**
+- **Why**: Test components from user perspective
+- **Integration**: Works seamlessly with Vitest
+
+**Playwright** (🆕 ADDED) - E2E Testing
+- **Why**: Test complete game flows across browsers
+- **Cross-browser**: Chrome, Firefox, Safari, Edge
+- **Fast**: Parallel execution
+- **Reliable**: Auto-wait, no flaky tests
+- **Video Recording**: Debug failures easily
+- **Screenshots**: Visual regression testing
+
+**Coverage Target**: 80% for game logic, 60% for UI
+
+---
+
+**UI & Animations** (🆕 UPGRADED)
+
+**Tailwind CSS 3.x** - Utility-First Styling
+- **Why**: Fast prototyping, small bundle size with purging
+- **Customization**: Poker-themed colors, felt textures, chip colors
+- **Responsive**: Mobile-first design system
+
+**Framer Motion** (🆕 ADDED) - Professional Animation Library
+- **Why**: Industry-standard animation library for React
+- **Spring Physics**: Natural card movements, chip sliding
+- **Gesture Support**: Drag interactions, swipe actions
+- **Orchestration**: Sequence complex animations (deal cards sequentially)
+- **Interruption Handling**: Cancel animations mid-flight
+- **Performance**: GPU-accelerated by default
+- **Accessibility**: Respects prefers-reduced-motion
+- **Bundle**: +60KB gzipped (acceptable for game quality)
+
+**Konva.js + react-konva** (🆕 ADDED) - Canvas Rendering
+- **Why**: Professional poker table with hardware-accelerated rendering
+- **Performance**: 60-120fps, single canvas vs 50+ DOM nodes
+- **Effects**: Shadows, glows, reflections, realistic felt texture
+- **React Integration**: react-konva provides React bindings
+- **Event Handling**: Built-in mouse/touch events on canvas elements
+- **Layering**: Separate layers for table, cards, chips, UI
+- **Bundle**: +90KB gzipped
+
+**Migration Note**: CSS animations still available as fallback; Konva optional for advanced rendering
+
+---
+
+**Game Logic**
+
+**pokersolver** - Hand Evaluation Library
+- **Why**: Battle-tested with 2,700+ weekly downloads, used by 1,100+ repos
+- **Features**: 5-7 card evaluation, hand ranking, comparison
+- **Integration**: Simple synchronous API, TypeScript types via @types/pokersolver
+- **Performance**: 500k-1M hands/second (50-100x more than needed)
+- **Adoption**: 414 GitHub stars, mature codebase, zero dependencies
+- **Reliability**: Proven correct over 7+ years
+
+---
+
+**Icons & Assets**
+
+**Lucide React** - Icon Library
 - **Why**: Professional, tree-shakeable, 1000+ icons
-- **Usage**: Suits (♠ ♥ ♦ ♣), actions (fold, raise, all-in), UI (settings, stats)
-- **No Emojis**: Professional appearance, consistent design
+- **Usage**: UI icons (settings, stats, actions)
+- **No Emojis**: Professional appearance
 
-**Localization**: react-i18next
+**Custom SVG Cards** (🆕 ADDED)
+- **Why**: Professional card graphics with custom styling
+- **Suits**: ♠ ♥ ♦ ♣ with custom designs
+- **Accessibility**: Color-blind mode with patterns
+
+---
+
+**Localization**
+
+**react-i18next** - i18n Framework
 - **Why**: Industry standard, supports plural forms, interpolation
-- **Setup**: English default, infrastructure ready for Vietnamese, Thai, Chinese
+- **Setup**: English default, ready for Vietnamese, Thai, Chinese
 - **Keys**: No hardcoded strings, all text via t('key') function
+- **Performance**: Lazy-load translation files
+
+---
+
+**Development Tools** (🆕 ADDED)
+
+**Storybook 7.x** - Component Development
+- **Why**: Develop UI components in isolation
+- **Benefits**: Faster iteration, living documentation, visual regression testing
+- **Addons**: Accessibility testing, interactions, viewport
+- **Integration**: Works with Vite and React
+
+**Lighthouse CI** - Performance Monitoring
+- **Why**: Track performance metrics over time
+- **Targets**: Time to Interactive <2s, bundle <500KB
+- **CI Integration**: Fail builds on performance regression
+
+**ESLint + Prettier** - Code Quality
+- **Why**: Consistent code style, catch bugs early
+- **TypeScript Integration**: Full TypeScript support
+
+---
+
+**Technology Decision Summary**
+
+| Category | Technology | Status | Rationale |
+|----------|-----------|--------|-----------|
+| **Framework** | React 18.2+ | ✅ Keep | Industry standard, excellent ecosystem |
+| **Language** | TypeScript 5.x | ✅ Keep | Type safety critical for poker logic |
+| **Build** | Vite 5.x | ✅ Keep | Fastest build tool, HMR <100ms |
+| **State** | XState v5 | 🆕 New | Perfect for state machine game logic |
+| **State Utils** | Immer | 🆕 New | Immutable updates (built into XState) |
+| **Testing** | Vitest | 🆕 New | 10x faster than Jest |
+| **E2E Testing** | Playwright | 🆕 New | Cross-browser testing |
+| **Styling** | Tailwind CSS | ✅ Keep | Utility-first, fast prototyping |
+| **Animations** | Framer Motion | 🆕 New | Professional animation library |
+| **Canvas** | Konva.js | 🆕 New | Hardware-accelerated rendering |
+| **Hand Eval** | pokersolver | ✅ Keep | Battle-tested, proven correct |
+| **Icons** | Lucide React | ✅ Keep | Professional icon library |
+| **i18n** | react-i18next | ✅ Keep | Industry standard |
+| **Dev Tools** | Storybook | 🆕 New | Component development |
+| **Perf Monitor** | Lighthouse CI | 🆕 New | Performance tracking |
+
+**Bundle Size Impact**:
+- Original: ~235 KB gzipped
+- Updated: ~419 KB gzipped (+184 KB, +78%)
+- Justification: Professional animations + canvas rendering worth the cost
+- Mitigation: Code-splitting, lazy loading (load Konva only in game)
+- Target: <500 KB gzipped (acceptable for game)
 
 ---
 
@@ -444,15 +576,21 @@ const tagBot: BotPersonality = {
 
 ---
 
-### 0.4 State Management Architecture
+### 0.4 State Management Architecture (🆕 UPDATED)
 
-**Decision**: Zustand with separate stores
+**Decision**: XState v5 for game state machine + Zustand for UI state
 
-**Game Store** (src/state-management/gameStore.ts):
+**Why XState for Game Logic?**
+Poker is a deterministic finite state machine with strict phase progression:
+```
+Menu → InGame → PostBlinds → Preflop → Flop → Turn → River → Showdown → HandComplete
+```
+
+**Game State Machine** (src/state-management/pokerMachine.ts):
 ```typescript
-interface GameState {
-  phase: 'menu' | 'playing' | 'game-over';
-  gamePhase: 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
+import { createMachine, assign } from 'xstate';
+
+interface PokerContext {
   players: Player[];
   communityCards: Card[];
   pot: PotStructure;
@@ -465,33 +603,174 @@ interface GameState {
   actionHistory: Action[];
 }
 
-export const useGameStore = create<GameState>((set) => ({
-  // ... initial state
+type PokerEvent =
+  | { type: 'START_GAME'; settings: GameSettings }
+  | { type: 'PLAYER_ACTION'; action: Action }
+  | { type: 'ADVANCE_PHASE' }
+  | { type: 'COMPLETE_HAND' }
+  | { type: 'END_GAME' };
 
-  // Actions
-  startNewGame: (settings: GameSettings) => set(state => {
-    // Initialize game with settings
-  }),
-
-  dealCards: () => set(state => {
-    // Deal hole cards to all players
-  }),
-
-  applyAction: (action: Action) => set(state => {
-    // Process player action, update state
-  }),
-
-  advancePhase: () => set(state => {
-    // Move to next phase (flop→turn→river→showdown)
-  }),
-
-  completeHand: () => set(state => {
-    // Award pot, rotate dealer, start next hand
-  })
-}));
+export const pokerMachine = createMachine({
+  id: 'poker',
+  types: {} as {
+    context: PokerContext;
+    events: PokerEvent;
+  },
+  initial: 'menu',
+  context: {
+    players: [],
+    communityCards: [],
+    pot: { mainPot: 0, sidePots: [], totalPot: 0 },
+    currentPlayerIndex: 0,
+    dealerIndex: 0,
+    smallBlind: 10,
+    bigBlind: 20,
+    deck: [],
+    burnedCards: [],
+    actionHistory: [],
+  },
+  states: {
+    menu: {
+      on: {
+        START_GAME: {
+          target: 'inGame',
+          actions: assign({
+            players: ({ event }) => initializePlayers(event.settings),
+            smallBlind: ({ event }) => event.settings.smallBlind,
+            bigBlind: ({ event }) => event.settings.bigBlind,
+          }),
+        },
+      },
+    },
+    inGame: {
+      initial: 'postingBlinds',
+      states: {
+        postingBlinds: {
+          entry: ['postBlinds', 'dealHoleCards'],
+          on: {
+            ADVANCE_PHASE: { target: 'preflop' },
+          },
+        },
+        preflop: {
+          entry: 'startBettingRound',
+          on: {
+            PLAYER_ACTION: {
+              actions: 'applyAction',
+            },
+            ADVANCE_PHASE: {
+              target: 'flop',
+              guard: 'bettingRoundComplete',
+            },
+          },
+        },
+        flop: {
+          entry: ['burnCard', 'dealFlop', 'startBettingRound'],
+          on: {
+            PLAYER_ACTION: { actions: 'applyAction' },
+            ADVANCE_PHASE: {
+              target: 'turn',
+              guard: 'bettingRoundComplete',
+            },
+          },
+        },
+        turn: {
+          entry: ['burnCard', 'dealTurn', 'startBettingRound'],
+          on: {
+            PLAYER_ACTION: { actions: 'applyAction' },
+            ADVANCE_PHASE: {
+              target: 'river',
+              guard: 'bettingRoundComplete',
+            },
+          },
+        },
+        river: {
+          entry: ['burnCard', 'dealRiver', 'startBettingRound'],
+          on: {
+            PLAYER_ACTION: { actions: 'applyAction' },
+            ADVANCE_PHASE: {
+              target: 'showdown',
+              guard: 'bettingRoundComplete',
+            },
+          },
+        },
+        showdown: {
+          entry: ['evaluateHands', 'distributePots', 'announcWinner'],
+          on: {
+            COMPLETE_HAND: { target: 'handComplete' },
+          },
+        },
+        handComplete: {
+          entry: ['rotateDealerButton', 'eliminateZeroStackPlayers'],
+          always: [
+            { target: 'postingBlinds', guard: 'moreThanOnePlayerRemaining' },
+            { target: '#poker.gameOver', guard: 'onlyOnePlayerRemaining' },
+          ],
+        },
+      },
+    },
+    gameOver: {
+      entry: 'showGameOverScreen',
+      on: {
+        START_GAME: { target: 'inGame' },
+      },
+    },
+  },
+}, {
+  actions: {
+    postBlinds: assign(({ context }) => {
+      // Implementation
+      return context;
+    }),
+    dealHoleCards: assign(({ context }) => {
+      // Implementation
+      return context;
+    }),
+    burnCard: assign(({ context }) => {
+      // Implementation
+      return context;
+    }),
+    dealFlop: assign(({ context }) => {
+      // Implementation
+      return context;
+    }),
+    // ... more actions
+  },
+  guards: {
+    bettingRoundComplete: ({ context }) => {
+      // Check if all players acted and bets are equal
+      return true;
+    },
+    moreThanOnePlayerRemaining: ({ context }) => {
+      return context.players.filter(p => p.chips > 0).length > 1;
+    },
+    onlyOnePlayerRemaining: ({ context }) => {
+      return context.players.filter(p => p.chips > 0).length === 1;
+    },
+  },
+});
 ```
 
-**Settings Store** (src/state-management/settingsStore.ts):
+**React Integration**:
+```typescript
+// src/presentation/hooks/useGameMachine.ts
+import { useMachine } from '@xstate/react';
+import { pokerMachine } from '@/state-management/pokerMachine';
+
+export const useGameMachine = () => {
+  const [state, send] = useMachine(pokerMachine);
+
+  return {
+    currentState: state.value,
+    context: state.context,
+    canAdvancePhase: state.can('ADVANCE_PHASE'),
+    startGame: (settings: GameSettings) => send({ type: 'START_GAME', settings }),
+    playerAction: (action: Action) => send({ type: 'PLAYER_ACTION', action }),
+    advancePhase: () => send({ type: 'ADVANCE_PHASE' }),
+  };
+};
+```
+
+**Settings Store** (src/state-management/settingsStore.ts) - Keep Zustand for non-game state:
 ```typescript
 interface Settings {
   numBots: number;
@@ -507,18 +786,17 @@ interface Settings {
 
 export const useSettingsStore = create(persist<Settings>((set) => ({
   // ... default settings
-
   updateSettings: (newSettings: Partial<Settings>) => set(state => ({
     ...state,
     ...newSettings
   }))
 }), {
-  name: 'poker-game-settings', // localStorage key
+  name: 'poker-game-settings',
   storage: createJSONStorage(() => localStorage)
 }));
 ```
 
-**UI Store** (src/state-management/uiStore.ts):
+**UI Store** (src/state-management/uiStore.ts) - Keep Zustand for UI state:
 ```typescript
 interface UIState {
   isSettingsOpen: boolean;
@@ -527,141 +805,416 @@ interface UIState {
   winnerData: WinnerData | null;
   toast: { message: string; type: 'info' | 'error' | 'success' } | null;
 }
+
+export const useUIStore = create<UIState>((set) => ({
+  isSettingsOpen: false,
+  isStatsOpen: false,
+  showWinnerAnnouncement: false,
+  winnerData: null,
+  toast: null,
+  // ... actions
+}));
 ```
 
-**Rationale**: Zustand is lighter than Redux, perfect for client-side, built-in persist for settings
+**Rationale**:
+- **XState for game logic**: Poker is a state machine, XState prevents impossible states
+- **Zustand for UI/settings**: Simple state that doesn't need state machine
+- **Best of both worlds**: Use right tool for each job
+- **Visual debugging**: XState Inspector shows state charts visually
+- **Type safety**: Exhaustive state typing prevents bugs
 
 ---
 
-### 0.5 Animation Strategy
+### 0.5 Animation Strategy (🆕 UPDATED)
 
-**Approach**: CSS keyframe animations + React state transitions
+**Approach**: Framer Motion for React animations + CSS as fallback
 
-**Card Dealing Animation**:
-```css
-/* src/presentation/styles/animations.css */
-@keyframes card-deal {
-  0% {
-    transform: translate(0, 0) scale(0.5);
-    opacity: 0;
-  }
-  50% {
-    transform: translate(var(--card-x), var(--card-y)) scale(0.8);
-    opacity: 0.5;
-  }
-  100% {
-    transform: translate(var(--card-x), var(--card-y)) scale(1);
-    opacity: 1;
-  }
+**Why Framer Motion?**
+- ✅ **Spring Physics**: Natural card movements (not linear easing)
+- ✅ **Gesture Support**: Drag cards, swipe to fold
+- ✅ **Orchestration**: Sequence complex animations (deal to each player in turn)
+- ✅ **Interruption**: Cancel animations mid-flight (e.g., skip animation on fast mode)
+- ✅ **Performance**: GPU-accelerated by default
+- ✅ **Accessibility**: Auto-respects `prefers-reduced-motion`
+
+**Card Dealing Animation with Framer Motion**:
+```tsx
+// src/presentation/components/game/PlayingCard.tsx
+import { motion } from 'framer-motion';
+
+interface PlayingCardProps {
+  card: Card;
+  targetPosition: { x: number; y: number };
+  dealDelay: number;
 }
 
-.card-dealing {
-  animation: card-deal 0.5s ease-out forwards;
-}
-```
-
-**Chip Movement**:
-```css
-@keyframes chip-slide {
-  0% {
-    transform: translate(var(--start-x), var(--start-y));
-  }
-  100% {
-    transform: translate(var(--end-x), var(--end-y));
-  }
-}
-
-.chip-sliding {
-  animation: chip-slide 0.4s ease-in-out forwards;
-}
-```
-
-**React Integration**:
-```typescript
-// src/presentation/components/game/CommunityCards.tsx
-const CommunityCards: React.FC = () => {
-  const { communityCards, gamePhase } = useGameStore();
-  const [animatingCards, setAnimatingCards] = useState<Card[]>([]);
-
-  useEffect(() => {
-    if (gamePhase === 'flop' && communityCards.length === 3) {
-      // Trigger flop animation
-      setAnimatingCards(communityCards.slice(0, 3));
-      setTimeout(() => setAnimatingCards([]), 500);
-    }
-  }, [gamePhase, communityCards]);
-
+export const PlayingCard: React.FC<PlayingCardProps> = ({
+  card,
+  targetPosition,
+  dealDelay
+}) => {
   return (
-    <div className="community-cards">
-      {communityCards.map((card, i) => (
-        <PlayingCard
-          key={i}
-          card={card}
-          className={animatingCards.includes(card) ? 'card-dealing' : ''}
-        />
-      ))}
-    </div>
+    <motion.div
+      className="playing-card"
+      initial={{
+        x: 0,
+        y: 0,
+        scale: 0.5,
+        opacity: 0,
+        rotateZ: -10
+      }}
+      animate={{
+        x: targetPosition.x,
+        y: targetPosition.y,
+        scale: 1,
+        opacity: 1,
+        rotateZ: 0
+      }}
+      transition={{
+        type: 'spring',
+        stiffness: 300,
+        damping: 20,
+        delay: dealDelay, // Stagger dealing to each player
+        duration: 0.5
+      }}
+      whileHover={{
+        scale: 1.05,
+        rotateZ: 5,
+        transition: { duration: 0.2 }
+      }}
+    >
+      <CardFront card={card} />
+    </motion.div>
   );
 };
 ```
 
-**Animation Settings**:
-- **Off**: No animations, instant updates
-- **Fast**: 0.2s duration (50% of normal)
-- **Normal**: 0.4-0.5s duration
-- **Slow**: 0.8-1s duration (2x normal)
+**Chip Movement with Spring Physics**:
+```tsx
+// src/presentation/components/game/ChipStack.tsx
+import { motion, useAnimation } from 'framer-motion';
 
-**Performance**: Use `will-change` CSS property, `transform` (GPU-accelerated), avoid layout thrashing
+export const ChipStack: React.FC<{ amount: number; targetPot: boolean }> = ({
+  amount,
+  targetPot
+}) => {
+  const controls = useAnimation();
+
+  useEffect(() => {
+    if (targetPot) {
+      controls.start({
+        x: [0, 960], // Slide to center pot
+        y: [0, -100, 540], // Arc motion
+        scale: [1, 0.8, 1],
+        transition: {
+          type: 'spring',
+          stiffness: 200,
+          damping: 15,
+          duration: 0.6
+        }
+      });
+    }
+  }, [targetPot, controls]);
+
+  return (
+    <motion.div animate={controls}>
+      <Chips amount={amount} />
+    </motion.div>
+  );
+};
+```
+
+**Orchestrated Sequence (Deal to All Players)**:
+```tsx
+// src/presentation/components/game/CardDealer.tsx
+import { motion, AnimatePresence } from 'framer-motion';
+
+export const CardDealer: React.FC = () => {
+  const { players } = useGameMachine();
+
+  return (
+    <AnimatePresence>
+      {players.map((player, index) => (
+        player.cards.map((card, cardIndex) => (
+          <PlayingCard
+            key={`${player.id}-${cardIndex}`}
+            card={card}
+            targetPosition={getPlayerCardPosition(index, cardIndex)}
+            dealDelay={index * 0.15 + cardIndex * 0.1} // Sequence: P1 card1, P2 card1, ..., P1 card2, P2 card2
+          />
+        ))
+      ))}
+    </AnimatePresence>
+  );
+};
+```
+
+**CSS Animations as Fallback** (for users with `prefers-reduced-motion`):
+```css
+/* src/presentation/styles/animations.css */
+@media (prefers-reduced-motion: reduce) {
+  .card-dealing {
+    animation: none;
+    transition: opacity 0.1s ease-out;
+  }
+}
+
+@keyframes card-deal-simple {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.card-dealing {
+  animation: card-deal-simple 0.3s ease-out;
+}
+```
+
+**Animation Settings Integration**:
+```tsx
+// src/presentation/hooks/useAnimationConfig.ts
+import { useSettingsStore } from '@/state-management/settingsStore';
+
+export const useAnimationConfig = () => {
+  const { animationSpeed } = useSettingsStore();
+
+  const durationMultiplier = {
+    off: 0,
+    fast: 0.5,
+    normal: 1,
+    slow: 2
+  }[animationSpeed];
+
+  const springConfig = {
+    stiffness: 300 / durationMultiplier,
+    damping: 20
+  };
+
+  return {
+    duration: (base: number) => base * durationMultiplier,
+    spring: springConfig,
+    disabled: animationSpeed === 'off'
+  };
+};
+```
+
+**Animation Settings**:
+- **Off**: `duration: 0`, instant updates, Framer Motion disabled
+- **Fast**: 0.5x multiplier (e.g., 0.5s → 0.25s)
+- **Normal**: 1x multiplier (default durations)
+- **Slow**: 2x multiplier (e.g., 0.5s → 1s)
+
+**Performance Optimizations**:
+- ✅ Use `will-change` CSS property
+- ✅ Animate `transform` and `opacity` only (GPU-accelerated)
+- ✅ Use `layoutId` for shared element transitions
+- ✅ Lazy load Framer Motion components (`React.lazy`)
+- ✅ Disable animations entirely in `off` mode (reduce bundle execution)
+
+**Accessibility**:
+- ✅ Auto-respects `prefers-reduced-motion`
+- ✅ Provide instant mode for users with motion sensitivity
+- ✅ Keyboard navigation unaffected by animations
+
+**Rationale**:
+- **Spring physics** feels more natural than easing curves
+- **Declarative API** easier to maintain than CSS keyframes
+- **Interruption handling** critical for skipping animations
+- **Orchestration** simplifies complex sequences (deal cards to 6 players)
+- **Gestures** enable advanced interactions (drag to bet, swipe to fold)
 
 ---
 
-### 0.6 Testing Strategy
+### 0.6 Testing Strategy (🆕 UPDATED)
 
-**Unit Tests** (game logic):
+**Testing Framework**: Vitest + React Testing Library + Playwright
+
+**Unit Tests** (game logic with Vitest):
 - Hand evaluation: 200+ test cases (all hand types, tie-breaking, kickers)
 - Pot calculation: 50+ side pot scenarios (2-9 players, various all-in amounts)
 - Betting rules: Min raise validation, all-in edge cases
 - Bot AI: Decision-making for each difficulty level
+- XState machines: State transitions, guards, actions
 
-**Integration Tests** (full game flows):
+**Integration Tests** (full game flows with Vitest):
 - Complete hand: Preflop → flop → turn → river → showdown
 - Heads-up rules: Special blind posting, action order
 - Multiple all-ins: Correct side pot creation and distribution
 - Tie scenarios: Split pots, odd chip distribution
+- State machine flows: Menu → game → showdown → next hand
 
-**Component Tests** (UI):
+**Component Tests** (UI with React Testing Library + Vitest):
 - Action buttons: Click handlers, disabled states
 - Raise slider: Min/max validation, quick-bet buttons
 - Timer: Countdown, auto-action on expiration
+- Framer Motion animations: Animation triggers, completion callbacks
+
+**E2E Tests** (🆕 ADDED with Playwright):
+- Complete game flow: Launch → Quick Play → play hand → game over
+- Cross-browser: Chrome, Firefox, Safari, Edge
+- Settings persistence: Change settings, reload page, verify preserved
+- Keyboard shortcuts: F=fold, C=call, R=raise, A=all-in
+- Accessibility: Screen reader navigation, keyboard-only play
 
 **Test Framework Setup**:
 ```typescript
-// jest.config.js
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom', // For React components
-  coverageThreshold: {
-    global: {
-      statements: 80,
-      branches: 75,
-      functions: 80,
-      lines: 80
+// vitest.config.ts (shared with vite.config.ts)
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80
+      },
+      include: [
+        'src/game-logic/**/*.ts',
+        'src/bot-ai/**/*.ts',
+        'src/presentation/components/**/*.tsx',
+        'src/state-management/**/*.ts'
+      ],
+      exclude: [
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+        '**/types/**'
+      ]
     }
   },
-  collectCoverageFrom: [
-    'src/game-logic/**/*.ts',
-    'src/bot-ai/**/*.ts',
-    'src/presentation/components/**/*.tsx',
-    '!**/*.test.ts',
-    '!**/*.test.tsx'
-  ]
-};
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  }
+});
 ```
 
-**TDD Workflow**:
-1. **RED**: Write failing test
+**Playwright E2E Config**:
+```typescript
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:5173',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure'
+  },
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ],
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+**TDD Workflow** (with Vitest):
+1. **RED**: Write failing test (Vitest watch mode shows instant feedback)
 2. **GREEN**: Write minimum code to pass
 3. **REFACTOR**: Clean up while keeping tests green
+
+**XState Testing** (🆕 ADDED):
+```typescript
+// tests/unit/state-management/pokerMachine.test.ts
+import { createActor } from 'xstate';
+import { pokerMachine } from '@/state-management/pokerMachine';
+
+describe('Poker State Machine', () => {
+  it('should transition from menu to inGame when START_GAME event', () => {
+    const actor = createActor(pokerMachine);
+    actor.start();
+
+    expect(actor.getSnapshot().value).toBe('menu');
+
+    actor.send({
+      type: 'START_GAME',
+      settings: { numBots: 5, startingChips: 1000 }
+    });
+
+    expect(actor.getSnapshot().value).toMatchObject({
+      inGame: 'postingBlinds'
+    });
+  });
+
+  it('should advance through game phases correctly', () => {
+    const actor = createActor(pokerMachine);
+    actor.start();
+
+    actor.send({ type: 'START_GAME', settings: defaultSettings });
+    expect(actor.getSnapshot().value).toMatchObject({ inGame: 'postingBlinds' });
+
+    actor.send({ type: 'ADVANCE_PHASE' });
+    expect(actor.getSnapshot().value).toMatchObject({ inGame: 'preflop' });
+
+    actor.send({ type: 'ADVANCE_PHASE' });
+    expect(actor.getSnapshot().value).toMatchObject({ inGame: 'flop' });
+
+    // ... test turn, river, showdown
+  });
+
+  it('should not allow invalid transitions', () => {
+    const actor = createActor(pokerMachine);
+    actor.start();
+
+    // Cannot advance phase from menu
+    expect(actor.getSnapshot().can({ type: 'ADVANCE_PHASE' })).toBe(false);
+  });
+});
+```
+
+**Performance Benchmarking**:
+```typescript
+// tests/performance/gameLoop.bench.ts
+import { describe, bench } from 'vitest';
+import { runCompleteHand } from '@/game-logic/engine/GameEngine';
+
+describe('Game Loop Performance', () => {
+  bench('Complete hand with 6 players', () => {
+    runCompleteHand({
+      players: 6,
+      hands: 1
+    });
+  }, { iterations: 1000 });
+
+  bench('Hand evaluation (pokersolver)', () => {
+    evaluateHand(['Ah', 'Kh', 'Qh', 'Jh', 'Th', 'Ad', 'Kd']);
+  }, { iterations: 10000 });
+});
+```
+
+**Advantages of Vitest over Jest**:
+- ⚡ **10x faster startup**: 0.3s vs 5-10s
+- 🔄 **Instant HMR**: Test re-runs on file save
+- 🎯 **Native ESM**: No transpilation needed
+- 🔧 **Shared config**: Use vite.config.ts
+- 📊 **Better DX**: Clearer error messages, better UI
+
+**Advantages of Playwright**:
+- ✅ **Cross-browser**: Real Chrome, Firefox, Safari
+- ✅ **Auto-wait**: No flaky tests
+- ✅ **Video/screenshots**: Debug failures easily
+- ✅ **Parallel execution**: Fast CI runs
 
 ---
 
@@ -1259,7 +1812,13 @@ module.exports = {
 
 ---
 
-**Plan Version**: 1.2 (Updated for pokersolver)
-**Last Updated**: 2025-11-18
+**Plan Version**: 2.0 (Updated Technology Stack)
+**Last Updated**: 2025-11-17
 **Status**: Ready for implementation
-**Hand Evaluator**: pokersolver - Battle-tested, 2,700+ weekly downloads, TypeScript support
+**Major Changes**:
+- State Management: XState v5 (replacing Zustand for game logic)
+- Testing: Vitest (replacing Jest) + Playwright (E2E)
+- Animations: Framer Motion (added)
+- Canvas Rendering: Konva.js (optional enhancement)
+- Dev Tools: Storybook + Lighthouse CI (added)
+**See**: tech-analysis.md for comprehensive analysis and rationale
