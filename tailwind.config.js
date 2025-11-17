@@ -38,6 +38,7 @@ export default {
         'fade-in': 'fadeIn 0.3s ease-out',
         'slide-in': 'slideIn 0.3s ease-out',
         'card-deal': 'cardDeal 0.5s ease-out',
+        'bounce-in': 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
       },
       keyframes: {
         fadeIn: {
@@ -51,6 +52,11 @@ export default {
         cardDeal: {
           '0%': { transform: 'scale(0.5) rotate(-10deg)', opacity: '0' },
           '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+        },
+        bounceIn: {
+          '0%': { transform: 'scale(0)', opacity: '0' },
+          '50%': { transform: 'scale(1.1)' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
         },
       },
     },
