@@ -22,6 +22,8 @@ export default {
         'deal-card': 'deal 0.5s ease-out forwards',
         'slide-chip': 'slide 0.4s ease-in-out forwards',
         'winner-glow': 'glow 1s ease-in-out infinite',
+        'fadeIn': 'fadeIn 0.3s ease-in',
+        'slideUp': 'slideUp 0.4s ease-out',
       },
       keyframes: {
         deal: {
@@ -36,6 +38,14 @@ export default {
         glow: {
           '0%, 100%': { boxShadow: '0 0 20px rgba(34, 197, 94, 0.5)' },
           '50%': { boxShadow: '0 0 30px rgba(34, 197, 94, 0.8)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(50px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
     },

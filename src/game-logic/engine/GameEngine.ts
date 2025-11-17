@@ -51,6 +51,7 @@ export class GameEngine {
     this.state.currentBet = 0;
     this.state.phase = 'preflop';
     this.state.actionHistory = [];
+    this.state.showdownResult = undefined;
     this.state.handNumber++;
 
     // Post blinds
@@ -282,9 +283,27 @@ export class GameEngine {
   private resolveShowdown(): void {
     const activePlayers = this.state.players.filter((p) => p.status !== 'folded' && p.status !== 'eliminated');
 
+    // Track all winners for display
+    const allWinners: Array<{ playerId: string; handName: string; handDescription: string; amount: number }> = [];
+
     if (activePlayers.length === 1) {
-      activePlayers[0].chips += this.state.pot;
+      // Only one player remaining - they win by default
+      const winner = activePlayers[0];
+      const winAmount = this.state.pot;
+      winner.chips += winAmount;
+
+      allWinners.push({
+        playerId: winner.id,
+        handName: 'Winner',
+        handDescription: 'Won by default (all others folded)',
+        amount: winAmount,
+      });
+
       this.state.pot = 0;
+      this.state.showdownResult = {
+        winners: allWinners,
+        timestamp: Date.now(),
+      };
       return;
     }
 
@@ -304,6 +323,16 @@ export class GameEngine {
       cards: [...p.holeCards, ...this.state.communityCards],
     }));
 
+    // Evaluate each hand for display
+    const handEvaluations = new Map<string, { name: string; description: string }>();
+    hands.forEach((hand) => {
+      const result = this.handEvaluator.evaluateHand(hand.cards);
+      handEvaluations.set(hand.playerId, {
+        name: result.name,
+        description: result.description,
+      });
+    });
+
     // Determine winners for main pot
     const mainPotWinners = this.handEvaluator.determineWinners(
       hands.filter(h => potStructure.mainPot.eligiblePlayerIds.includes(h.playerId))
@@ -313,7 +342,17 @@ export class GameEngine {
     const mainPotShare = Math.floor(potStructure.mainPot.amount / mainPotWinners.length);
     mainPotWinners.forEach((winnerId) => {
       const winner = this.state.players.find((p) => p.id === winnerId);
-      if (winner) winner.chips += mainPotShare;
+      const handInfo = handEvaluations.get(winnerId);
+
+      if (winner) {
+        winner.chips += mainPotShare;
+        allWinners.push({
+          playerId: winnerId,
+          handName: handInfo?.name || 'Unknown',
+          handDescription: handInfo?.description || '',
+          amount: mainPotShare,
+        });
+      }
     });
 
     // Distribute side pots
@@ -326,11 +365,32 @@ export class GameEngine {
 
       sidePotWinners.forEach((winnerId) => {
         const winner = this.state.players.find((p) => p.id === winnerId);
-        if (winner) winner.chips += sidePotShare;
+        const handInfo = handEvaluations.get(winnerId);
+
+        if (winner) {
+          winner.chips += sidePotShare;
+
+          // Check if this winner already won main pot, add to their total
+          const existingWinner = allWinners.find(w => w.playerId === winnerId);
+          if (existingWinner) {
+            existingWinner.amount += sidePotShare;
+          } else {
+            allWinners.push({
+              playerId: winnerId,
+              handName: handInfo?.name || 'Unknown',
+              handDescription: handInfo?.description || '',
+              amount: sidePotShare,
+            });
+          }
+        }
       });
     });
 
     this.state.pot = 0;
+    this.state.showdownResult = {
+      winners: allWinners,
+      timestamp: Date.now(),
+    };
   }
 
   private getNextActivePlayerIndex(startIndex: number): number {

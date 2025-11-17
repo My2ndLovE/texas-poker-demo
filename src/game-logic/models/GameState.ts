@@ -14,6 +14,17 @@ export interface GameState {
   bigBlind: number;
   handNumber: number;
   actionHistory: Action[];
+  showdownResult?: ShowdownResult;
+}
+
+export interface ShowdownResult {
+  winners: {
+    playerId: string;
+    handName: string;
+    handDescription: string;
+    amount: number;
+  }[];
+  timestamp: number;
 }
 
 export interface Action {
