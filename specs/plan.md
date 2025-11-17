@@ -11,7 +11,7 @@
 
 Build a production-quality, single-player Texas Hold'em poker game that runs entirely in the browser. No backend, no database, no multiplayer - pure client-side gameplay with intelligent bot opponents. Players experience authentic poker mechanics with professional UI, smooth animations, and customizable settings.
 
-**Technical Approach**: React 18 + TypeScript for UI, pure TypeScript game engine for poker logic, bot AI with three difficulty levels, state management with Zustand, comprehensive test coverage with Jest, Vite for blazing-fast development.
+**Technical Approach**: React 18 + TypeScript for UI, XState v5 for game state machine, poker-evaluator for hand evaluation (22M hands/sec), bot AI with three difficulty levels using built-in odds calculation, Vitest for testing, Framer Motion for animations, Vite for blazing-fast development.
 
 **Timeline**: 6-8 weeks for complete implementation (solo developer, 20-30 hours/week)
 
@@ -117,15 +117,22 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 
 ---
 
-**Game Logic**
+**Game Logic** (🆕 UPGRADED)
 
-**pokersolver** - Hand Evaluation Library
-- **Why**: Battle-tested with 2,700+ weekly downloads, used by 1,100+ repos
-- **Features**: 5-7 card evaluation, hand ranking, comparison
-- **Integration**: Simple synchronous API, TypeScript types via @types/pokersolver
-- **Performance**: 500k-1M hands/second (50-100x more than needed)
-- **Adoption**: 414 GitHub stars, mature codebase, zero dependencies
-- **Reliability**: Proven correct over 7+ years
+**poker-evaluator** - Hand Evaluation Library
+- **Why**: 20-40x faster than alternatives, native TypeScript, built-in odds calculation for bot AI
+- **Performance**: 22 million hands/second (2,000x more than needed)
+- **Features**:
+  - 3, 5, 6, 7 card evaluation (Texas Hold'em ready)
+  - Hand ranking and comparison
+  - **Built-in odds calculation** (`winningOddsForPlayer()`, `winningHandsForTable()`)
+  - Two Plus Two algorithm with lookup table (industry standard)
+- **Integration**: Native TypeScript support, clean functional API
+- **Algorithm**: Two Plus Two with HandRanks.dat lookup table (proven correct)
+- **Dependencies**: Zero runtime dependencies
+- **Bundle**: ~500KB (includes lookup table, acceptable for 22M hands/sec performance)
+
+**Migration Note**: Replaces pokersolver for superior performance and built-in odds calculation essential for bot AI
 
 ---
 
@@ -186,7 +193,7 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 | **Styling** | Tailwind CSS | ✅ Keep | Utility-first, fast prototyping |
 | **Animations** | Framer Motion | 🆕 New | Professional animation library |
 | **Canvas** | Konva.js | 🆕 New | Hardware-accelerated rendering |
-| **Hand Eval** | pokersolver | ✅ Keep | Battle-tested, proven correct |
+| **Hand Eval** | poker-evaluator | 🆕 New | 22M hands/sec, native TypeScript, built-in odds |
 | **Icons** | Lucide React | ✅ Keep | Professional icon library |
 | **i18n** | react-i18next | ✅ Keep | Industry standard |
 | **Dev Tools** | Storybook | 🆕 New | Component development |
@@ -194,10 +201,17 @@ Build a production-quality, single-player Texas Hold'em poker game that runs ent
 
 **Bundle Size Impact**:
 - Original: ~235 KB gzipped
-- Updated: ~419 KB gzipped (+184 KB, +78%)
-- Justification: Professional animations + canvas rendering worth the cost
-- Mitigation: Code-splitting, lazy loading (load Konva only in game)
-- Target: <500 KB gzipped (acceptable for game)
+- Updated: ~520 KB gzipped (+285 KB, +121%)
+- Breakdown of additions:
+  - Framer Motion: +60KB
+  - Konva.js: +90KB
+  - XState: +25KB
+  - poker-evaluator: +100KB (includes lookup table)
+  - Immer: +14KB
+  - Playwright (dev only): 0KB
+- Justification: Professional animations + canvas + 22M hands/sec performance worth the cost
+- Mitigation: Code-splitting, lazy loading (load Konva/poker-evaluator only in game)
+- Target: <600 KB gzipped (acceptable for game quality)
 
 ---
 
@@ -401,55 +415,71 @@ standalone-poker-game/
 
 ## Phase 0: Technology Decisions & Research
 
-### 0.1 Hand Evaluation Library Selection
+### 0.1 Hand Evaluation Library Selection (🆕 UPDATED)
 
-**Decision**: Use **pokersolver** (https://github.com/goldfire/pokersolver)
+**Decision**: Use **poker-evaluator** (https://github.com/Sukhmai/poker-evaluator)
 
 **Rationale**:
-- Industry standard with 2,700+ weekly downloads (10x more than alternatives)
-- Battle-tested: 414 GitHub stars, used by 1,100+ repositories
-- Mature and stable: Poker hand evaluation is a solved problem, library works perfectly
-- TypeScript support: Official types available via @types/pokersolver
-- Simple synchronous API: No async initialization, no WebAssembly complexity
-- Zero dependencies: Lightweight, pure JavaScript
-- Production-ready: 7+ years of real-world usage validates reliability
-- Perfect performance: More than sufficient for 200+ concurrent players
+- **20-40x faster** than alternatives: 22 million hands/second (vs ~500k-1M for pokersolver)
+- **Native TypeScript**: Written in TypeScript (89.5%), no @types package needed
+- **Built-in odds calculation**: `winningOddsForPlayer()` and `winningHandsForTable()` essential for bot AI
+- **Two Plus Two algorithm**: Industry-standard with lookup table (HandRanks.dat)
+- **Zero dependencies**: Self-contained, no external dependencies
+- **Modern API**: Clean TypeScript interfaces, functional design
+- **Active maintenance**: Recent commits, responsive to issues
+- **Perfect for bots**: Odds calculation eliminates need for manual Monte Carlo implementation
+
+**Why poker-evaluator over pokersolver**:
+1. **Bot AI Critical**: Medium and Hard bots need `winningOddsForPlayer()` for pot odds calculations
+2. **Performance**: 22M hands/sec enables real-time simulations and advanced bot strategies
+3. **TypeScript-first**: Aligns with strict mode project requirements
+4. **Focused scope**: Texas Hold'em optimized (we don't need 14+ game variants)
+
+See `specs/hand-evaluator-comparison.md` for comprehensive analysis.
 
 **Integration**:
 ```typescript
 // src/game-logic/evaluation/HandEvaluator.ts
-import { Hand } from 'pokersolver';
+import * as PokerEvaluator from 'poker-evaluator';
 
 export class HandEvaluator {
   evaluateHand(cards: Card[]): HandResult {
-    // Convert Card[] to pokersolver format (e.g., "As", "Kh")
+    // Convert Card[] to poker-evaluator format (e.g., "As", "Kh")
     const cardStrings = cards.map(c => `${c.rank}${c.suit.toLowerCase()}`);
 
     // Evaluate best 5-card hand from 7 cards
-    const hand = Hand.solve(cardStrings);
+    const evaluated = PokerEvaluator.evalHand(cardStrings);
 
     return {
-      rank: this.mapRankToEnum(hand.rank),
-      description: hand.descr,
-      cards: hand.cards,
-      value: hand.rank
+      handType: evaluated.handType,  // 0-9 (high card to royal flush)
+      handRank: evaluated.handRank,  // rank within hand type
+      value: evaluated.value,         // numerical value for comparison
+      handName: evaluated.handName   // human-readable name
     };
+  }
+
+  // NEW: Built-in odds calculation for bot AI
+  calculateWinningOdds(
+    holeCards: Card[],
+    communityCards: Card[],
+    numOpponents: number
+  ): number {
+    const holeStrings = holeCards.map(c => `${c.rank}${c.suit.toLowerCase()}`);
+    const commStrings = communityCards.map(c => `${c.rank}${c.suit.toLowerCase()}`);
+
+    // Returns probability (0-1) that player wins
+    return PokerEvaluator.winningOddsForPlayer(holeStrings, commStrings, numOpponents);
   }
 
   compareHands(hand1Cards: Card[], hand2Cards: Card[]): number {
     // Returns: 1 if hand1 wins, -1 if hand2 wins, 0 if tie
-    const h1 = Hand.solve(hand1Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`));
-    const h2 = Hand.solve(hand2Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`));
+    const h1 = PokerEvaluator.evalHand(hand1Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`));
+    const h2 = PokerEvaluator.evalHand(hand2Cards.map(c => `${c.rank}${c.suit.toLowerCase()}`));
 
-    const winners = Hand.winners([h1, h2]);
-    if (winners.length === 2) return 0; // Tie
-    return winners[0] === h1 ? 1 : -1;
-  }
-
-  private mapRankToEnum(rank: number): HandRank {
-    // Map pokersolver rank to internal enum
-    // 0 = High Card, 1 = Pair, ..., 9 = Straight Flush
-    return rank as HandRank;
+    // Compare hand values (higher is better)
+    if (h1.value > h2.value) return 1;
+    if (h1.value < h2.value) return -1;
+    return 0;  // Tie
   }
 }
 ```
@@ -1812,7 +1842,7 @@ describe('Game Loop Performance', () => {
 
 ---
 
-**Plan Version**: 2.0 (Updated Technology Stack)
+**Plan Version**: 2.1 (Updated Technology Stack + Hand Evaluator)
 **Last Updated**: 2025-11-17
 **Status**: Ready for implementation
 **Major Changes**:
@@ -1821,4 +1851,7 @@ describe('Game Loop Performance', () => {
 - Animations: Framer Motion (added)
 - Canvas Rendering: Konva.js (optional enhancement)
 - Dev Tools: Storybook + Lighthouse CI (added)
-**See**: tech-analysis.md for comprehensive analysis and rationale
+- Hand Evaluator: poker-evaluator (replacing pokersolver for 20-40x performance + built-in odds)
+**See**:
+- tech-analysis.md for technology stack rationale
+- hand-evaluator-comparison.md for poker-evaluator vs pokersolver analysis
