@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useGameStore } from '@/state-management/gameStore';
 import { PlayerSeat } from '../components/game/PlayerSeat';
 import { ActionButtons } from '../components/game/ActionButtons';
@@ -19,6 +19,69 @@ export const PokerTable: React.FC = () => {
       startNewHand();
     }
   }, [gameState, startNewHand]);
+
+  // Extract last action for each player from action history
+  const playerLastActions = useMemo(() => {
+    if (!gameState) return {};
+
+    const lastActions: Record<string, { type: string; amount?: number }> = {};
+
+    // Get actions from most recent betting round (after last phase change)
+    const reversedActions = [...gameState.actionHistory].reverse();
+    const seenPlayers = new Set<string>();
+
+    for (const action of reversedActions) {
+      if (!seenPlayers.has(action.playerId)) {
+        lastActions[action.playerId] = {
+          type: action.type,
+          amount: action.amount,
+        };
+        seenPlayers.add(action.playerId);
+      }
+    }
+
+    return lastActions;
+  }, [gameState?.actionHistory]);
+
+  // Get recent action log (last 8 actions)
+  const recentActions = useMemo(() => {
+    if (!gameState) return [];
+
+    return gameState.actionHistory.slice(-8).reverse().map((action) => {
+      const player = gameState.players.find(p => p.id === action.playerId);
+      const playerName = player?.name || 'Unknown';
+
+      let actionText = '';
+      switch (action.type) {
+        case ActionType.Fold:
+          actionText = 'folded';
+          break;
+        case ActionType.Check:
+          actionText = 'checked';
+          break;
+        case ActionType.Call:
+          actionText = `called $${action.amount}`;
+          break;
+        case ActionType.Bet:
+          actionText = `bet $${action.amount}`;
+          break;
+        case ActionType.Raise:
+          actionText = `raised to $${player?.currentBet || action.amount}`;
+          break;
+        case ActionType.AllIn:
+          actionText = `went all-in for $${action.amount}`;
+          break;
+        default:
+          actionText = action.type;
+      }
+
+      return {
+        playerName,
+        text: actionText,
+        type: action.type,
+      };
+    });
+  }, [gameState?.actionHistory, gameState?.players]);
 
   if (!gameState) {
     return (
@@ -47,112 +110,180 @@ export const PokerTable: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-poker-green-dark to-poker-green p-8">
+    <div className="min-h-screen bg-gradient-to-br from-poker-green-dark to-poker-green p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-gray-800 text-white p-4 rounded-lg mb-4 flex justify-between items-center">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white p-4 rounded-lg mb-4 flex justify-between items-center shadow-xl">
           <div>
-            <h1 className="text-2xl font-bold">Texas Hold'em Poker</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <span>♠️♥️</span>
+              Texas Hold'em Poker
+              <span>♦️♣️</span>
+            </h1>
             <div className="text-sm text-gray-400">
-              Hand #{gameState.handNumber} | Phase: {gameState.phase}
+              Hand #{gameState.handNumber} | {gameState.phase}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold">Pot: ${gameState.pot.totalPot}</div>
-            <div className="text-sm">Current Bet: ${gameState.currentBet}</div>
+            <div className="text-3xl font-bold text-yellow-400 flex items-center gap-2">
+              <span>🏆</span>
+              <span>${gameState.pot.totalPot}</span>
+            </div>
+            <div className="text-sm text-gray-300">Current Bet: ${gameState.currentBet}</div>
           </div>
         </div>
 
-        {/* Community Cards */}
-        {gameState.communityCards.length > 0 && (
-          <div className="bg-poker-felt p-6 rounded-lg mb-4 flex justify-center gap-2">
-            <div className="text-white font-bold mr-4 self-center">Community Cards:</div>
-            {gameState.communityCards.map((card, idx) => (
-              <PlayingCard key={idx} card={card} />
-            ))}
-          </div>
-        )}
-
-        {/* Bot Players */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {botPlayers.map((player) => (
-            <PlayerSeat
-              key={player.id}
-              player={player}
-              isCurrentPlayer={currentPlayer?.id === player.id}
-              showCards={gameState.phase === GamePhase.Showdown}
-            />
-          ))}
-        </div>
-
-        {/* Human Player */}
-        {humanPlayer && (
-          <div className="mb-4">
-            <PlayerSeat
-              player={humanPlayer}
-              isCurrentPlayer={currentPlayer?.id === humanPlayer.id}
-              showCards={true}
-            />
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        {isHumanTurn &&
-          humanPlayer &&
-          humanPlayer.status !== PlayerStatus.Folded &&
-          humanPlayer.status !== PlayerStatus.AllIn &&
-          gameState.phase !== GamePhase.HandComplete &&
-          gameState.phase !== GamePhase.Showdown && (
-            <ActionButtons
-              player={humanPlayer}
-              currentBet={gameState.currentBet}
-              minRaise={gameState.minRaise}
-              onAction={handleAction}
-            />
-          )}
-
-        {/* Waiting message */}
-        {!isHumanTurn && isProcessing && (
-          <div className="bg-gray-800 text-white p-4 rounded-lg text-center">
-            <div className="text-xl">Waiting for {currentPlayer?.name}...</div>
-          </div>
-        )}
-
-        {/* Hand Complete */}
-        {gameState.phase === GamePhase.HandComplete && (
-          <div className="bg-green-800 text-white p-6 rounded-lg text-center">
-            <div className="text-2xl font-bold mb-4">Hand Complete!</div>
-
-            {/* Winner Information */}
-            {gameState.handResult && (
-              <div className="mb-6">
-                {gameState.handResult.winners.map((winner, idx) => (
-                  <div key={idx} className="text-xl mb-2">
-                    <span className="font-bold text-yellow-300">{winner.playerName}</span>
-                    {' wins '}
-                    <span className="font-bold text-green-300">${winner.amount}</span>
-                    {winner.handDescription && gameState.handResult?.showdown && (
-                      <span className="text-gray-300">
-                        {' with '}
-                        {winner.handDescription}
-                      </span>
-                    )}
-                    {gameState.handResult && !gameState.handResult.showdown && (
-                      <span className="text-gray-300"> (everyone else folded)</span>
-                    )}
+        <div className="grid grid-cols-12 gap-4">
+          {/* Main Game Area */}
+          <div className="col-span-9">
+            {/* Community Cards */}
+            <div className="bg-poker-felt p-6 rounded-lg mb-4 min-h-[140px] flex flex-col items-center justify-center shadow-2xl border-4 border-yellow-600">
+              {gameState.communityCards.length > 0 ? (
+                <>
+                  <div className="text-white font-bold mb-3 text-lg">Community Cards</div>
+                  <div className="flex gap-3">
+                    {gameState.communityCards.map((card, idx) => (
+                      <div key={idx} className="transform hover:scale-110 transition-transform">
+                        <PlayingCard card={card} />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </>
+              ) : (
+                <div className="text-gray-400 text-center">
+                  <div className="text-4xl mb-2">🃏</div>
+                  <div>Waiting for flop...</div>
+                </div>
+              )}
+            </div>
+
+            {/* Bot Players */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {botPlayers.map((player) => (
+                <PlayerSeat
+                  key={player.id}
+                  player={player}
+                  isCurrentPlayer={currentPlayer?.id === player.id}
+                  showCards={false}
+                  gamePhase={gameState.phase}
+                  lastAction={playerLastActions[player.id]}
+                />
+              ))}
+            </div>
+
+            {/* Human Player */}
+            {humanPlayer && (
+              <div className="mb-4">
+                <PlayerSeat
+                  player={humanPlayer}
+                  isCurrentPlayer={currentPlayer?.id === humanPlayer.id}
+                  showCards={true}
+                  gamePhase={gameState.phase}
+                  lastAction={playerLastActions[humanPlayer.id]}
+                />
               </div>
             )}
 
-            <button
-              onClick={handleNextHand}
-              className="px-8 py-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-bold text-xl transition"
-            >
-              Next Hand
-            </button>
+            {/* Action Buttons */}
+            {isHumanTurn &&
+              humanPlayer &&
+              humanPlayer.status !== PlayerStatus.Folded &&
+              humanPlayer.status !== PlayerStatus.AllIn &&
+              gameState.phase !== GamePhase.HandComplete &&
+              gameState.phase !== GamePhase.Showdown && (
+                <ActionButtons
+                  player={humanPlayer}
+                  currentBet={gameState.currentBet}
+                  minRaise={gameState.minRaise}
+                  onAction={handleAction}
+                />
+              )}
+
+            {/* Waiting message */}
+            {!isHumanTurn && isProcessing && (
+              <div className="bg-gray-800 text-white p-4 rounded-lg text-center shadow-lg">
+                <div className="text-xl flex items-center justify-center gap-2">
+                  <span className="animate-pulse">⏳</span>
+                  <span>Waiting for {currentPlayer?.name}...</span>
+                  <span className="animate-pulse">⏳</span>
+                </div>
+              </div>
+            )}
+
+            {/* Hand Complete */}
+            {gameState.phase === GamePhase.HandComplete && (
+              <div className="bg-gradient-to-br from-green-800 to-green-900 text-white p-6 rounded-lg text-center shadow-2xl border-4 border-yellow-400">
+                <div className="text-3xl font-bold mb-4">🎉 Hand Complete! 🎉</div>
+
+                {/* Winner Information */}
+                {gameState.handResult && (
+                  <div className="mb-6">
+                    {gameState.handResult.winners.map((winner, idx) => (
+                      <div key={idx} className="text-xl mb-2 p-3 bg-green-700 rounded-lg">
+                        <span className="font-bold text-yellow-300 text-2xl">{winner.playerName}</span>
+                        {' wins '}
+                        <span className="font-bold text-green-300 text-2xl">${winner.amount}</span>
+                        {winner.handDescription && gameState.handResult?.showdown && (
+                          <span className="text-gray-200">
+                            {' with '}
+                            <span className="font-bold text-yellow-200">{winner.handDescription}</span>
+                          </span>
+                        )}
+                        {gameState.handResult && !gameState.handResult.showdown && (
+                          <span className="text-gray-300"> (everyone else folded)</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={handleNextHand}
+                  className="px-8 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-white rounded-lg font-bold text-xl transition transform hover:scale-105 shadow-xl"
+                >
+                  ▶️ Next Hand
+                </button>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Action Log Sidebar */}
+          <div className="col-span-3">
+            <div className="bg-gray-900 text-white rounded-lg p-4 shadow-xl sticky top-4">
+              <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                <span>📋</span>
+                <span>Action Log</span>
+              </h3>
+              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                {recentActions.length === 0 ? (
+                  <div className="text-gray-500 text-sm text-center py-4">
+                    No actions yet...
+                  </div>
+                ) : (
+                  recentActions.map((action, idx) => (
+                    <div
+                      key={idx}
+                      className="text-sm p-2 bg-gray-800 rounded border-l-4"
+                      style={{
+                        borderLeftColor:
+                          action.type === ActionType.Fold ? '#dc2626' :
+                          action.type === ActionType.Call ? '#3b82f6' :
+                          action.type === ActionType.Check ? '#10b981' :
+                          action.type === ActionType.Bet || action.type === ActionType.Raise ? '#eab308' :
+                          action.type === ActionType.AllIn ? '#ef4444' :
+                          '#6b7280'
+                      }}
+                    >
+                      <span className="font-semibold text-yellow-300">{action.playerName}</span>
+                      {' '}
+                      <span className="text-gray-300">{action.text}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
