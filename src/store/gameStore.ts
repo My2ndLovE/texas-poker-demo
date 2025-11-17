@@ -5,8 +5,16 @@ import { Deck } from '../game-logic/models/Deck'
 import { HandEvaluator } from '../game-logic/evaluation/HandEvaluator'
 import { PotCalculator } from '../game-logic/pot-calculation/PotCalculator'
 import { BettingValidator } from '../game-logic/rules/BettingValidator'
+import { BotAI } from '../game-logic/ai/BotAI'
 
 type GamePhase = 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'handComplete'
+
+export interface ActionLog {
+  playerName: string
+  action: string
+  amount?: number | undefined
+  timestamp: number
+}
 
 interface GameState {
   // Players
@@ -29,10 +37,15 @@ interface GameState {
   smallBlind: number
   bigBlind: number
 
+  // Action history
+  actionLog: ActionLog[]
+  lastWinners: { playerId: string; amount: number; handDescription: string }[]
+
   // Helpers
   handEvaluator: HandEvaluator
   potCalculator: PotCalculator
   bettingValidator: BettingValidator
+  botAI: BotAI
 
   // Actions
   initializeGame: (playerCount: number) => void
@@ -40,10 +53,13 @@ interface GameState {
   dealCards: () => void
   advancePhase: () => void
   playerAction: (action: string, amount?: number) => void
+  processBotTurn: () => void
+  handleShowdown: () => void
   getCurrentPlayer: () => Player | undefined
   getValidActions: () => string[]
   calculateCallAmount: () => number
   calculateMinRaise: () => number
+  addActionLog: (playerName: string, action: string, amount?: number) => void
 }
 
 const createPlayer = (id: string, name: string, chips: number, isBot: boolean): Player => {
@@ -64,11 +80,29 @@ export const useGameStore = create<GameState>((set, get) => ({
   minRaise: 20,
   smallBlind: 10,
   bigBlind: 20,
+  actionLog: [],
+  lastWinners: [],
 
   // Helpers
   handEvaluator: new HandEvaluator(),
   potCalculator: new PotCalculator(),
   bettingValidator: new BettingValidator(),
+  botAI: new BotAI(),
+
+  // Add action to log
+  addActionLog: (playerName: string, action: string, amount?: number) => {
+    set((state) => ({
+      actionLog: [
+        ...state.actionLog.slice(-9), // Keep last 10 actions
+        {
+          playerName,
+          action,
+          amount,
+          timestamp: Date.now(),
+        },
+      ],
+    }))
+  },
 
   // Initialize game with players
   initializeGame: (playerCount: number = 6) => {
@@ -91,6 +125,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentPlayerIndex: 0,
       potAmount: 0,
       currentBet: 0,
+      actionLog: [],
+      lastWinners: [],
     })
 
     // Start first hand
@@ -134,7 +170,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       potAmount: smallBlind + bigBlind,
       currentBet: bigBlind,
       minRaise: bigBlind,
+      actionLog: [],
+      lastWinners: [],
     })
+
+    // Log blinds
+    get().addActionLog(players[sbIndex]!.name, 'posts small blind', smallBlind)
+    get().addActionLog(players[bbIndex]!.name, 'posts big blind', bigBlind)
 
     // Deal cards
     get().dealCards()
@@ -150,6 +192,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     })
 
     set({ gamePhase: 'preflop' })
+
+    // Trigger bot turn if current player is bot
+    setTimeout(() => {
+      const currentPlayer = get().getCurrentPlayer()
+      if (currentPlayer?.isBot) {
+        get().processBotTurn()
+      }
+    }, 500)
   },
 
   // Advance to next phase
@@ -162,8 +212,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     // Reset betting for new round
     players.forEach((player) => player.resetForNewRound())
 
-    // First to act is after dealer
-    const firstToAct = (dealerIndex + 1) % players.length
+    // Find first active player after dealer
+    let firstToAct = (dealerIndex + 1) % players.length
+    let iterations = 0
+    while (!players[firstToAct]?.canAct() && iterations < players.length) {
+      firstToAct = (firstToAct + 1) % players.length
+      iterations++
+    }
 
     switch (gamePhase) {
       case 'preflop':
@@ -171,18 +226,21 @@ export const useGameStore = create<GameState>((set, get) => ({
         deck.burn()
         newCommunityCards.push(...deck.dealMultiple(3))
         newPhase = 'flop'
+        get().addActionLog('Dealer', 'deals flop')
         break
       case 'flop':
         // Deal turn (burn 1, deal 1)
         deck.burn()
         newCommunityCards.push(deck.deal())
         newPhase = 'turn'
+        get().addActionLog('Dealer', 'deals turn')
         break
       case 'turn':
         // Deal river (burn 1, deal 1)
         deck.burn()
         newCommunityCards.push(deck.deal())
         newPhase = 'river'
+        get().addActionLog('Dealer', 'deals river')
         break
       case 'river':
         newPhase = 'showdown'
@@ -198,6 +256,135 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentBet: 0,
       currentPlayerIndex: firstToAct,
     })
+
+    // Handle showdown
+    if (newPhase === 'showdown') {
+      setTimeout(() => get().handleShowdown(), 1000)
+    }
+
+    // Trigger bot turn if needed
+    if (newPhase !== 'showdown' && newPhase !== 'handComplete') {
+      setTimeout(() => {
+        const currentPlayer = get().getCurrentPlayer()
+        if (currentPlayer?.isBot) {
+          get().processBotTurn()
+        }
+      }, 1000)
+    }
+  },
+
+  // Process bot turn
+  processBotTurn: () => {
+    const { players, currentPlayerIndex, potAmount, communityCards, gamePhase, botAI } = get()
+    const currentPlayer = players[currentPlayerIndex]
+
+    if (!currentPlayer || !currentPlayer.isBot || !currentPlayer.canAct()) {
+      return
+    }
+
+    // Get bot decision
+    const decision = botAI.decideAction(
+      currentPlayer,
+      get().currentBet,
+      potAmount,
+      communityCards,
+      gamePhase
+    )
+
+    // Apply thinking delay
+    const thinkingTime = botAI.getThinkingTime(currentPlayer.botDifficulty)
+
+    setTimeout(() => {
+      // Double-check player is still current (user might have taken action)
+      const stillCurrent = get().getCurrentPlayer()
+      if (stillCurrent?.id === currentPlayer.id) {
+        get().playerAction(decision.action, decision.amount)
+      }
+    }, thinkingTime)
+  },
+
+  // Handle showdown and determine winners
+  handleShowdown: () => {
+    const { players, communityCards, potAmount, handEvaluator } = get()
+
+    const activePlayers = players.filter((p) => p.status !== 'folded')
+
+    if (activePlayers.length === 0) {
+      set({ gamePhase: 'handComplete' })
+      return
+    }
+
+    // Only 1 player left (everyone else folded)
+    if (activePlayers.length === 1) {
+      const winner = activePlayers[0]!
+      winner.chips += potAmount
+
+      set({
+        potAmount: 0,
+        gamePhase: 'handComplete',
+        lastWinners: [
+          {
+            playerId: winner.id,
+            amount: potAmount,
+            handDescription: 'Won (others folded)',
+          },
+        ],
+      })
+
+      get().addActionLog(winner.name, 'wins', potAmount)
+      return
+    }
+
+    // Evaluate hands for showdown
+    const handResults = activePlayers.map((player) => {
+      const allCards = [...player.holeCards, ...communityCards]
+      const handResult = handEvaluator.evaluateHand(allCards)
+      return {
+        player,
+        handResult,
+        handDescription: handResult.description,
+      }
+    })
+
+    // Sort by hand rank (higher = better)
+    handResults.sort((a, b) => {
+      const comparison = handEvaluator.compareHands(
+        [...a.player.holeCards, ...communityCards],
+        [...b.player.holeCards, ...communityCards]
+      )
+      return -comparison // Reverse for descending order
+    })
+
+    // Find winners (may be multiple in case of tie)
+    const bestRank = handResults[0]!.handResult.rank
+    const winners = handResults.filter((r) => r.handResult.rank === bestRank)
+
+    // Distribute pot
+    const amountPerWinner = Math.floor(potAmount / winners.length)
+    const remainder = potAmount % winners.length
+
+    const winnerResults = winners.map((winner, index) => {
+      const winAmount = amountPerWinner + (index < remainder ? 1 : 0)
+      winner.player.chips += winAmount
+
+      get().addActionLog(
+        winner.player.name,
+        `wins with ${winner.handDescription}`,
+        winAmount
+      )
+
+      return {
+        playerId: winner.player.id,
+        amount: winAmount,
+        handDescription: winner.handDescription,
+      }
+    })
+
+    set({
+      potAmount: 0,
+      gamePhase: 'handComplete',
+      lastWinners: winnerResults,
+    })
   },
 
   // Handle player action
@@ -208,6 +395,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!currentPlayer || !currentPlayer.canAct()) {
       return
     }
+
+    // Log action
+    const actionText = action === 'call' ? 'calls' :
+                       action === 'raise' ? 'raises to' :
+                       action === 'bet' ? 'bets' :
+                       action === 'check' ? 'checks' :
+                       action === 'fold' ? 'folds' :
+                       action === 'all-in' ? 'goes all-in' : action
+
+    get().addActionLog(currentPlayer.name, actionText, amount)
 
     switch (action) {
       case 'fold':
@@ -271,10 +468,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       if (playersWhoNeedToAct.length === 0) {
         // Betting round complete, advance phase
         setTimeout(() => get().advancePhase(), 1000)
+      } else {
+        // Next player's turn
+        const nextPlayer = players[nextIndex]
+        if (nextPlayer?.isBot) {
+          get().processBotTurn()
+        }
       }
     } else {
-      // No more active players, end hand
-      set({ gamePhase: 'handComplete' })
+      // No more active players, go to showdown
+      setTimeout(() => get().handleShowdown(), 1000)
     }
   },
 
