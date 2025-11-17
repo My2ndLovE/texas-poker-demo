@@ -2,14 +2,16 @@
 
 **Project**: Standalone Poker Game
 **Created**: 2025-11-18
+**Updated**: 2025-11-18
 **Status**: Active
 **Type**: Single-player poker game with bot opponents (no backend, no database)
+**Platform**: Mobile-first, responsive web application
 
 ---
 
 ## Project Overview
 
-Build a production-quality, standalone Texas Hold'em poker game playable entirely in the browser. Players compete against intelligent bot opponents in a beautifully designed interface with complete poker rules, smooth animations, and professional gameplay experience. No server, no database, no multiplayer - pure client-side single-player entertainment.
+Build a production-quality, standalone Texas Hold'em poker game playable entirely in the browser. Players compete against intelligent bot opponents in a beautifully designed **mobile-first** interface with complete poker rules, smooth animations, and professional gameplay experience. Optimized for smartphones and tablets, with full desktop support. No server, no database, no multiplayer - pure client-side single-player entertainment.
 
 ---
 
@@ -101,27 +103,27 @@ As a player, I want to play against bots that make realistic decisions so the ga
 
 As a player, I want a visually appealing and intuitive poker table interface so I can focus on gameplay without confusion or visual clutter.
 
-**Why this priority**: UI is the only interface to the game. Bad UI = frustrating experience = users leave. Must be professional quality for MVP.
+**Why this priority**: UI is the only interface to the game. Bad UI = frustrating experience = users leave. Must be professional quality for MVP. Mobile-first design ensures maximum accessibility.
 
-**Independent Test**: Show interface to 5 poker players, ask them to identify all elements (pot, cards, actions), verify 100% understanding without explanation.
+**Independent Test**: Show interface to 5 poker players on mobile devices, ask them to identify all elements (pot, cards, actions), verify 100% understanding without explanation.
 
 **Acceptance Scenarios**:
 
-1. **Given** I view the game table, **When** interface loads, **Then** I see elliptical poker table with green felt texture, 6 player positions arranged around table, clear dealer button indicator, community cards area in center, pot display prominently shown
+1. **Given** I view the game table on mobile, **When** interface loads, **Then** I see optimized poker table layout with green felt texture, player positions arranged for portrait/landscape viewing, clear dealer button indicator, community cards area in center, pot display prominently shown
 
 2. **Given** I view player positions, **When** looking at each seat, **Then** each player shows avatar/icon, name, chip stack (e.g., "1,250"), current bet in round (if any), hole cards (face-down for opponents, face-up for me after dealt), dealer button next to dealer, SB/BB indicators during blind posting
 
-3. **Given** hand is in progress, **When** actions occur, **Then** I see smooth animations (cards dealing/sliding, chips moving to pot, pot amount updating with +animation, winning chips sliding to winner)
+3. **Given** hand is in progress, **When** actions occur, **Then** I see smooth animations optimized for mobile (60fps, cards dealing/sliding, chips moving to pot, pot amount updating with +animation, winning chips sliding to winner)
 
-4. **Given** it's my turn, **When** I need to act, **Then** action buttons appear prominently below my cards (Fold, Check/Call, Raise/Bet), countdown timer shows 30 seconds remaining with visual progress indicator, available actions clearly labeled
+4. **Given** it's my turn on mobile, **When** I need to act, **Then** action buttons appear at bottom of screen in touch-friendly size (minimum 44x44px), countdown timer shows 30 seconds remaining with visual progress indicator, available actions clearly labeled with haptic feedback on tap
 
-5. **Given** I select "Raise", **When** raise interface appears, **Then** I see slider for raise amount, quick-bet buttons (2x BB, Pot, All-In), min/max raise displayed, "Confirm" button to execute action
+5. **Given** I select "Raise" on mobile, **When** raise interface appears, **Then** I see touch-optimized slider for raise amount, large quick-bet buttons (2x BB, Pot, All-In), min/max raise displayed, "Confirm" button with clear touch target (minimum 44x44px)
 
 6. **Given** showdown occurs, **When** winner is determined, **Then** winning hand is highlighted with animation, hand rank displayed (e.g., "Full House, Kings over Tens"), chips slide to winner with celebration effect, winning cards briefly enlarged
 
-7. **Given** I want to see recent actions, **When** I look at action log, **Then** I see scrollable history (e.g., "Mike raises to 40", "You call 40", "Sarah folds"), last 10 actions visible, auto-scrolls to newest
+7. **Given** I want to see recent actions, **When** I look at action log, **Then** I see scrollable history (e.g., "Mike raises to 40", "You call 40", "Sarah folds"), last 10 actions visible, auto-scrolls to newest, swipe gesture supported
 
-8. **Given** game is responsive, **When** I resize window, **Then** table scales proportionally, maintains aspect ratio, remains playable on laptop screens (1366x768 minimum), no overlapping elements
+8. **Given** game is responsive, **When** I change device orientation or screen size, **Then** table adapts seamlessly (portrait: vertical layout, landscape: horizontal layout), remains playable on all devices (mobile 375px+, tablet 768px+, desktop 1366px+), no overlapping elements, touch targets remain accessible
 
 ---
 
@@ -167,23 +169,29 @@ As a player, I want to see my current statistics and hand strength indicators so
 
 ---
 
-### User Story 7 - Keyboard Shortcuts and Accessibility (Priority: P3)
+### User Story 7 - Touch Controls, Gestures and Accessibility (Priority: P1)
 
-As a player, I want keyboard shortcuts for common actions so I can play faster and more efficiently.
+As a mobile player, I want intuitive touch controls and gestures so I can play efficiently on my phone, with keyboard shortcuts available on desktop.
 
-**Why this priority**: Enhances UX for power users, improves accessibility. Nice-to-have feature, not critical for MVP launch.
+**Why this priority**: Mobile-first design requires excellent touch UX. Primary interaction method for most users. Accessibility ensures everyone can play.
 
-**Independent Test**: Play game using only keyboard, verify all actions accessible, screen reader compatibility.
+**Independent Test**: Play game on mobile using only touch, verify all actions accessible with appropriate gestures. Test with screen reader on mobile and desktop.
 
 **Acceptance Scenarios**:
 
-1. **Given** it's my turn, **When** I press keyboard keys, **Then** shortcuts work: F = Fold, C = Call/Check, R = Raise (opens raise dialog), A = All-In, Enter = Confirm action, Escape = Cancel/Close dialogs
+1. **Given** it's my turn on mobile, **When** I tap action buttons, **Then** I feel haptic feedback, buttons respond immediately (<100ms), visual pressed state indicates action registered
 
-2. **Given** I use raise slider, **When** I press arrow keys, **Then** Up/Down arrows adjust raise amount by 1 BB, Left/Right arrows by 10% of pot, shortcuts shown in tooltip
+2. **Given** I'm on desktop, **When** I press keyboard keys, **Then** shortcuts work: F = Fold, C = Call/Check, R = Raise (opens raise dialog), A = All-In, Enter = Confirm action, Escape = Cancel/Close dialogs
 
-3. **Given** I use screen reader, **When** I navigate interface, **Then** all elements have ARIA labels ("Your hole cards: Ace of Spades, King of Hearts", "Pot: 250 chips", "Sarah's turn, thinking..."), game state changes announced
+3. **Given** I use raise slider on mobile, **When** I drag the slider, **Then** slider responds smoothly to touch with large touch target (44x44px minimum), value updates in real-time, haptic feedback on milestone amounts
 
-4. **Given** I enable color blind mode in settings, **When** I view cards, **Then** suits use patterns in addition to colors (hearts/diamonds have stripes, clubs/spades have dots), Red/Black distinction not required
+4. **Given** I use raise slider on desktop, **When** I press arrow keys, **Then** Up/Down arrows adjust raise amount by 1 BB, Left/Right arrows by 10% of pot, shortcuts shown in tooltip
+
+5. **Given** I want to see action history, **When** I swipe up on action log, **Then** log scrolls smoothly with momentum, pull-to-refresh not triggered accidentally
+
+6. **Given** I use screen reader on mobile/desktop, **When** I navigate interface, **Then** all elements have ARIA labels ("Your hole cards: Ace of Spades, King of Hearts", "Pot: 250 chips", "Sarah's turn, thinking..."), game state changes announced, touch targets clearly labeled
+
+7. **Given** I enable color blind mode in settings, **When** I view cards, **Then** suits use patterns in addition to colors (hearts/diamonds have stripes, clubs/spades have dots), Red/Black distinction not required, patterns clear on small screens
 
 ---
 
@@ -236,7 +244,7 @@ As a player, I want to review my recently played hands so I can analyze my decis
 **Game Initialization & Setup**
 
 - **FR-001**: System MUST allow player to start quick play game with 1-8 bot opponents (default 5 bots, 6 players total)
-- **FR-002**: System MUST randomly assign player a seat at the table
+- **FR-002**: System MUST assign player to bottom-center seat for optimal viewing angle on all devices
 - **FR-003**: System MUST assign each bot a unique name and avatar from predefined list
 - **FR-004**: System MUST initialize all players with starting chips (configurable: 500/1000/2000/5000, default 1000)
 - **FR-005**: System MUST randomly assign initial dealer button to a player
@@ -375,64 +383,112 @@ As a player, I want to review my recently played hands so I can analyze my decis
 - **FR-079**: System MUST animate chip movements (chips slide to pot when bet)
 - **FR-080**: System MUST animate pot amount increase (number changes with scale effect)
 - **FR-081**: System MUST animate winner celebration (highlight winning hand, chips slide to winner)
-- **FR-082**: System MUST maintain 60fps animation performance
+- **FR-082**: System MUST maintain 60fps animation performance on mobile and desktop
 - **FR-083**: System MUST allow disabling animations in settings
 - **FR-084**: System MUST provide fast animation mode (2x speed)
 
+**Mobile & Touch Requirements**
+
+- **FR-085**: System MUST support touch input as primary interaction method
+- **FR-086**: System MUST provide haptic feedback on button taps (if device supports)
+- **FR-087**: System MUST ensure all interactive elements meet minimum touch target size (44x44px iOS, 48x48px Android)
+- **FR-088**: System MUST prevent accidental actions (require confirmation for Fold, All-In)
+- **FR-089**: System MUST support pinch-to-zoom on cards for better visibility
+- **FR-090**: System MUST support both portrait and landscape orientations
+- **FR-091**: System MUST adapt layout automatically on orientation change without data loss
+- **FR-092**: System MUST support swipe gestures (swipe up for action history, swipe down to dismiss modals)
+- **FR-093**: System MUST prevent page scrolling/zooming during gameplay (viewport locked)
+- **FR-094**: System MUST work in fullscreen mode on mobile browsers
+- **FR-095**: System MUST support iOS Safari, Chrome Mobile, Firefox Mobile, Samsung Internet
+- **FR-096**: System MUST handle mobile-specific events (orientation change, app backgrounding, network loss)
+- **FR-097**: System MUST optimize asset loading for mobile networks (progressive loading, lazy loading)
+- **FR-098**: System MUST cache assets for offline play after first load (Service Worker)
+
 **Settings & Customization**
 
-- **FR-085**: System MUST allow configuring number of bots (1-8, default 5)
-- **FR-086**: System MUST allow configuring bot difficulty (Easy/Medium/Hard/Mixed, default Mixed)
-- **FR-087**: System MUST allow configuring starting chips (500/1000/2000/5000, default 1000)
-- **FR-088**: System MUST allow configuring blind levels ($5/$10, $10/$20, $25/$50, default $10/$20)
-- **FR-089**: System MUST allow configuring action timer duration (15s/30s/60s/Off, default 30s)
-- **FR-090**: System MUST allow configuring animation speed (Slow/Normal/Fast/Off, default Normal)
-- **FR-091**: System MUST allow enabling/disabling sound effects (default On)
-- **FR-092**: System MUST allow selecting card back design (5 options, default blue)
-- **FR-093**: System MUST save settings to browser localStorage (persists across sessions)
-- **FR-094**: System MUST apply setting changes immediately or on next game start
+- **FR-099**: System MUST allow configuring number of bots (1-8, default 5)
+- **FR-100**: System MUST allow configuring bot difficulty (Easy/Medium/Hard/Mixed, default Mixed)
+- **FR-101**: System MUST allow configuring starting chips (500/1000/2000/5000, default 1000)
+- **FR-102**: System MUST allow configuring blind levels ($5/$10, $10/$20, $25/$50, default $10/$20)
+- **FR-103**: System MUST allow configuring action timer duration (15s/30s/60s/Off, default 30s)
+- **FR-104**: System MUST allow configuring animation speed (Slow/Normal/Fast/Off, default Normal)
+- **FR-105**: System MUST allow enabling/disabling sound effects (default On)
+- **FR-106**: System MUST allow selecting card back design (5 options, default blue)
+- **FR-107**: System MUST save settings to browser localStorage (persists across sessions)
+- **FR-108**: System MUST apply setting changes immediately or on next game start
 
 **Statistics & Tracking**
 
-- **FR-095**: System MUST track current session statistics:
+- **FR-109**: System MUST track current session statistics:
   - Hands played
   - Hands won
   - Win rate percentage
   - Total chips won/lost
   - Biggest pot won
   - Current chip stack
-- **FR-096**: System MUST display current session stats on player panel
-- **FR-097**: System MUST display session summary on game end screen
-- **FR-098**: System MUST optionally save session statistics to localStorage (enabled in settings)
+- **FR-110**: System MUST display current session stats on player panel
+- **FR-111**: System MUST display session summary on game end screen
+- **FR-112**: System MUST save session statistics to localStorage by default (can be disabled in settings)
 
 **Accessibility & User Experience**
 
-- **FR-099**: System MUST support keyboard shortcuts for all actions:
+- **FR-113**: System MUST support keyboard shortcuts on desktop for all actions:
   - F = Fold
   - C = Call/Check
   - R = Raise (open raise dialog)
   - A = All-In
   - Enter = Confirm action
   - Escape = Cancel/Close
-- **FR-100**: System MUST provide ARIA labels for screen readers on all interactive elements
-- **FR-101**: System MUST announce game state changes to screen readers ("Your turn", "Flop dealt", "You won 250 chips")
-- **FR-102**: System MUST support color blind mode with patterned card suits
-- **FR-103**: System MUST remain playable on laptop screens (minimum 1366x768 resolution)
-- **FR-104**: System MUST scale interface responsively when window resized
-- **FR-105**: System MUST show tooltips on hover explaining game elements
+- **FR-114**: System MUST provide ARIA labels for screen readers on all interactive elements
+- **FR-115**: System MUST announce game state changes to screen readers ("Your turn", "Flop dealt", "You won 250 chips")
+- **FR-116**: System MUST support color blind mode with patterned card suits
+- **FR-117**: System MUST remain playable on all screen sizes (mobile 375px+, tablet 768px+, desktop 1366px+)
+- **FR-118**: System MUST scale interface responsively when window resized or device rotated
+- **FR-119**: System MUST show tooltips on hover (desktop) and long-press (mobile) explaining game elements
+- **FR-120**: System MUST meet WCAG 2.1 Level AA compliance standards for accessibility
 
 **Error Handling & Edge Cases**
 
-- **FR-106**: System MUST handle browser refresh/close gracefully (show confirmation if game active)
-- **FR-107**: System MUST validate all player inputs (bet amounts, raise amounts)
-- **FR-108**: System MUST prevent invalid actions (cannot check when bet exists, cannot raise below minimum)
-- **FR-109**: System MUST handle insufficient chips scenarios (auto-convert to all-in)
-- **FR-110**: System MUST handle side pot calculations with 4+ all-ins correctly
-- **FR-111**: System MUST handle tie scenarios at showdown (split pots, odd chip distribution)
-- **FR-112**: System MUST handle heads-up special rules automatically
-- **FR-113**: System MUST skip eliminated players when rotating dealer button
-- **FR-114**: System MUST log errors to browser console for debugging
-- **FR-115**: System MUST display user-friendly error messages (no technical jargon)
+- **FR-121**: System MUST handle browser refresh/close gracefully (show confirmation if game active)
+- **FR-122**: System MUST validate all player inputs (bet amounts, raise amounts)
+- **FR-123**: System MUST prevent invalid actions (cannot check when bet exists, cannot raise below minimum)
+- **FR-124**: System MUST handle insufficient chips scenarios (auto-convert to all-in)
+- **FR-125**: System MUST handle side pot calculations with 4+ all-ins correctly
+- **FR-126**: System MUST handle tie scenarios at showdown (split pots, odd chip distribution)
+- **FR-127**: System MUST handle heads-up special rules automatically
+- **FR-128**: System MUST skip eliminated players when rotating dealer button
+- **FR-129**: System MUST log errors to browser console for debugging
+- **FR-130**: System MUST display user-friendly error messages (no technical jargon)
+
+---
+
+## Technical Dependencies
+
+### Core Libraries
+
+- **Hand Evaluator**: pokersolver (https://github.com/goldfire/pokersolver)
+  - Battle-tested: 2,700+ weekly downloads, 1,100+ repos using it
+  - TypeScript types available (@types/pokersolver)
+  - Zero dependencies, production-ready
+  - Simple synchronous API
+  - Why: Stable, reliable, widely adopted, simple API, production-proven
+
+### Framework & Build Tools
+
+- **Frontend Framework**: React 18.2+ with TypeScript 5.x (strict mode)
+- **State Management**: Zustand 4.x with persist middleware
+- **Build Tool**: Vite 5.x (fast HMR, optimized builds)
+- **Styling**: Tailwind CSS 3.x for utility-first responsive design
+- **Icons**: Lucide React (tree-shakeable, 1000+ icons)
+- **Testing**: Jest 29.x + React Testing Library
+- **Localization**: react-i18next
+
+### Mobile Optimization
+
+- **Service Worker**: Workbox for offline caching and PWA support
+- **Touch Gestures**: Native browser touch events with Hammer.js fallback
+- **Viewport**: Mobile-optimized viewport meta tags
+- **Performance**: Lighthouse CI for performance monitoring
 
 ---
 
@@ -440,21 +496,24 @@ As a player, I want to review my recently played hands so I can analyze my decis
 
 ### Measurable Outcomes
 
-- **SC-001**: Player can start a game and complete first hand within 30 seconds of clicking "Quick Play"
+- **SC-001**: Player can start a game on mobile and complete first hand within 30 seconds of tapping "Quick Play"
 - **SC-002**: 100% of poker rules implemented correctly (verified by comprehensive test suite with 200+ test cases)
 - **SC-003**: Medium bots win 45-50% of hands against Easy bots in 1000-hand simulation (validates AI balance)
-- **SC-004**: Animations maintain 60fps on hardware released in last 5 years (verified by Chrome DevTools FPS meter)
-- **SC-005**: Action processing (click to UI update) completes in <100ms (95th percentile)
+- **SC-004**: Animations maintain 60fps on mobile devices (verified on iPhone 12+, Samsung Galaxy S20+) and desktop
+- **SC-005**: Touch action processing (tap to UI update) completes in <100ms (95th percentile)
 - **SC-006**: Side pot calculations are 100% accurate in multi-player all-in scenarios (verified by 50 edge case tests)
-- **SC-007**: Interface is understandable to 95%+ of new players without tutorial (measured by playtesting with 20 users)
+- **SC-007**: Interface is understandable to 95%+ of new mobile players without tutorial (measured by playtesting with 20 users)
 - **SC-008**: Zero game-breaking bugs or incorrect poker rules (verified by regression test suite)
-- **SC-009**: Game remains playable on 1366x768 laptop screens with no UI overlap or scrolling
+- **SC-009**: Game remains playable on all screen sizes (mobile 375px+, tablet 768px+, desktop 1366px+) with no UI overlap
 - **SC-010**: Settings changes apply correctly 100% of time (verified by 30 settings test cases)
-- **SC-011**: Keyboard shortcuts work for all actions with 100% success rate
+- **SC-011**: Touch targets meet minimum size requirements (44x44px iOS, 48x48px Android) with 100% compliance
 - **SC-012**: Test coverage ≥80% for game logic, ≥60% for UI components
-- **SC-013**: Build size <2MB for optimized production bundle (code-splitting applied)
-- **SC-014**: Time from game start to first hand dealt is <2 seconds (including animations)
-- **SC-015**: Average player session length >15 minutes (measured in playtesting with 50+ users)
+- **SC-013**: Build size <2MB for optimized production bundle, <500KB initial load (code-splitting + lazy loading)
+- **SC-014**: Time from game start to first hand dealt is <2 seconds on mobile (including animations)
+- **SC-015**: Average player session length >15 minutes on mobile (measured in playtesting with 50+ users)
+- **SC-016**: PWA installable on iOS and Android devices
+- **SC-017**: Lighthouse Performance score ≥90, Accessibility score ≥95
+- **SC-018**: First Contentful Paint <1 second, Time to Interactive <3 seconds on 3G networks
 
 ---
 
@@ -463,24 +522,26 @@ As a player, I want to review my recently played hands so I can analyze my decis
 ### Assumptions
 
 - Players have basic understanding of Texas Hold'em rules (game provides visual hints but not comprehensive tutorial)
-- Players use modern browsers (Chrome 90+, Firefox 90+, Safari 14+, Edge 90+)
-- Players have desktop or laptop computers (1366x768 minimum resolution)
+- Players use modern mobile browsers (iOS Safari 14+, Chrome Mobile 90+, Firefox Mobile 90+, Samsung Internet 14+) or desktop browsers (Chrome 90+, Firefox 90+, Safari 14+, Edge 90+)
+- Players have smartphones (iOS 12+, Android 8+), tablets, or desktop/laptop computers
 - Players have JavaScript enabled (game is pure client-side JavaScript/TypeScript)
-- Players accept that game state is not saved across browser sessions by default (can opt-in to save settings)
+- Players accept that game state is not saved across browser sessions by default (settings and stats are saved)
 - Players are comfortable with English language for MVP (localization for other languages post-MVP)
-- Players have mouse or trackpad for interactions (touchscreen support post-MVP)
+- Players have touch input (primary) or mouse/trackpad (secondary) for interactions
+- Mobile players have reasonable network connectivity (3G or better for initial load, playable offline after first load)
 
 ### Constraints
 
 - **No Backend**: All game logic runs client-side in browser (no server, no database, no API calls)
 - **No Multiplayer**: Single-player only, no online/local multiplayer (network code out of scope)
-- **No Persistence**: Game state lost on browser close unless manually saved to localStorage (no cloud saves)
+- **No Cloud Persistence**: Game state lost on browser close, settings/stats saved to localStorage only (no cloud saves)
 - **Single Game Mode**: Cash game only, no tournaments, no sit-and-go (simplified scope for MVP)
 - **Fixed Table Size**: 6-9 players maximum (2-9 player support, but optimal experience at 6)
 - **No Real Money**: Play money only, no integration with payment systems or cryptocurrency
-- **Desktop Focus**: Optimized for desktop/laptop, mobile support post-MVP
+- **Mobile-First**: Optimized for mobile devices first, then tablets and desktop
 - **English Only**: UI text in English, localization infrastructure ready but translations post-MVP
 - **Modern Browsers**: Requires ES2020+ features, no Internet Explorer support
+- **Network**: Requires initial network connection to load app, then playable offline (PWA)
 
 ---
 
@@ -519,10 +580,10 @@ The following features are explicitly EXCLUDED from initial release:
 - Hand history export (CSV, JSON)
 
 **Platform Expansion**
-- Mobile apps (iOS, Android)
-- Tablet optimization
-- Touchscreen controls
+- Native mobile apps (iOS, Android) - PWA is MVP
 - VR poker table
+- Smart TV apps
+- Desktop apps (Electron)
 
 **Social Features**
 - User profiles
@@ -535,6 +596,8 @@ These may be considered for future versions but are not part of the standalone g
 
 ---
 
-**Specification Version**: 1.0
+**Specification Version**: 2.0 (Mobile-First)
 **Last Updated**: 2025-11-18
 **Status**: Active - Ready for implementation
+**Target Platforms**: Mobile (iOS/Android), Tablet, Desktop
+**Hand Evaluator**: pokersolver (battle-tested, 2,700+ weekly downloads)
