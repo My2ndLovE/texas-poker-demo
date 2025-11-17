@@ -8,6 +8,7 @@ interface GameStore {
   engine: GameEngine | null;
   gameState: GameState | null;
   botPlayers: Map<string, BotPlayer>;
+  isProcessingBots: boolean;
 
   // Actions
   initializeGame: (numBots: number, startingChips: number, smallBlind: number, bigBlind: number, botDifficulty: BotDifficulty) => void;
@@ -21,6 +22,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   engine: null,
   gameState: null,
   botPlayers: new Map(),
+  isProcessingBots: false,
 
   initializeGame: (numBots, startingChips, smallBlind, bigBlind, botDifficulty) => {
     // Create human player
@@ -48,6 +50,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       engine,
       gameState: engine.getState(),
       botPlayers,
+      isProcessingBots: false,
     });
 
     // Process bot actions if it's a bot's turn
@@ -59,67 +62,79 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!engine) return;
 
     engine.startNewHand();
-    set({ gameState: engine.getState() });
+    set({ gameState: engine.getState(), isProcessingBots: false });
 
     // Process bot actions if needed
     setTimeout(() => get().processBotActions(), 1000);
   },
 
   playerAction: (action, amount) => {
-    const { engine } = get();
-    if (!engine) return;
+    const { engine, isProcessingBots } = get();
+    if (!engine || isProcessingBots) return;
 
     const currentPlayer = engine.getCurrentPlayer();
     if (!currentPlayer || currentPlayer.isBot) return;
 
-    engine.playerAction(currentPlayer.id, action, amount);
-    set({ gameState: engine.getState() });
+    const success = engine.playerAction(currentPlayer.id, action, amount);
+    if (success) {
+      set({ gameState: engine.getState() });
 
-    // Process bot actions
-    setTimeout(() => get().processBotActions(), 500);
+      // Process bot actions after human action
+      setTimeout(() => get().processBotActions(), 800);
+    }
   },
 
   processBotActions: () => {
-    const { engine, botPlayers } = get();
-    if (!engine) return;
+    const { engine, botPlayers, isProcessingBots } = get();
+    if (!engine || isProcessingBots) return;
 
-    let currentPlayer = engine.getCurrentPlayer();
-    const gameState = engine.getState();
+    set({ isProcessingBots: true });
 
-    // Process all consecutive bot actions
-    while (currentPlayer && currentPlayer.isBot && gameState.phase !== 'showdown') {
-      const botAI = botPlayers.get(currentPlayer.id);
-      if (!botAI) break;
+    // Process bot actions with delays for visibility
+    const processSingleBotAction = () => {
+      const currentState = engine.getState();
+      const currentPlayer = engine.getCurrentPlayer();
 
-      // Bot decides action
-      const decision = botAI.decideAction(currentPlayer, gameState);
+      // Stop if game is over or in showdown
+      if (currentState.phase === 'showdown' || !currentPlayer) {
+        set({ isProcessingBots: false });
 
-      // Execute action
-      engine.playerAction(currentPlayer.id, decision.action, decision.amount);
-
-      // Get next player
-      currentPlayer = engine.getCurrentPlayer();
-
-      // Update state
-      set({ gameState: engine.getState() });
-
-      // Small delay between bot actions for visibility
-      if (currentPlayer?.isBot) {
-        // In real implementation, use setTimeout for async processing
-        // For now, continue synchronously
-      }
-    }
-
-    // Check if hand is over
-    if (gameState.phase === 'showdown') {
-      // Auto-start new hand after delay
-      setTimeout(() => {
-        const state = get();
-        if (state.engine && !state.engine.isGameOver()) {
-          state.startNewHand();
+        // Auto-start new hand after showdown
+        if (currentState.phase === 'showdown' && !engine.isGameOver()) {
+          setTimeout(() => get().startNewHand(), 3000);
         }
-      }, 3000);
-    }
+        return;
+      }
+
+      // Stop if it's human player's turn
+      if (!currentPlayer.isBot) {
+        set({ isProcessingBots: false, gameState: currentState });
+        return;
+      }
+
+      // Bot's turn - make decision
+      const botAI = botPlayers.get(currentPlayer.id);
+      if (!botAI) {
+        set({ isProcessingBots: false });
+        return;
+      }
+
+      const decision = botAI.decideAction(currentPlayer, currentState);
+      const success = engine.playerAction(currentPlayer.id, decision.action, decision.amount);
+
+      if (success) {
+        const newState = engine.getState();
+        set({ gameState: newState });
+
+        // Continue processing if still bot's turn, with delay for visibility
+        setTimeout(() => processSingleBotAction(), 1200);
+      } else {
+        set({ isProcessingBots: false });
+      }
+    };
+
+    // Start processing chain
+    processSingleBotAction();
   },
 
   resetGame: () => {
@@ -127,6 +142,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       engine: null,
       gameState: null,
       botPlayers: new Map(),
+      isProcessingBots: false,
     });
   },
 }));
