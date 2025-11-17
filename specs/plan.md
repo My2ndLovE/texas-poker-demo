@@ -411,13 +411,19 @@ export function calculateSidePots(players: Player[]): PotStructure {
 **Medium Bot** (Target 45-50% win rate):
 - **Preflop**: Position-aware (tight early, loose late), folds weak hands from early position
 - **Post-flop**: Considers pot odds (calls if equity > pot odds), bluffs 25% of time in position
-- **Basic Patterns**: Notices if opponent folds often (bluffs more), tightens if opponent aggressive
+- **Opponent Tracking**: Tracks basic stats (VPIP, fold-to-bet frequency) per opponent after 10+ hands observed
+- **Basic Adaptation**: Bluffs more against high fold-to-bet opponents (>70%), tightens against aggressive opponents
 - **Thinking Time**: 1000ms-3000ms (longer on tough decisions)
 
 **Hard Bot** (Target 55-60% win rate):
 - **Preflop**: Advanced hand ranges by position, 3-bet bluffs with suited connectors
 - **Post-flop**: Implied odds calculation, bet sizing tells (small = strong, large = bluff), reads opponent ranges
-- **Adaptive**: Exploits player tendencies (bluffs tight players, value bets calling stations)
+- **Opponent Tracking**: Tracks detailed stats (VPIP, fold-to-bet, call frequency, raise frequency, aggression factor)
+- **Advanced Adaptation**:
+  - Bluffs frequently against opponents with fold-to-bet >70%
+  - Value bets aggressively against calling stations (call frequency >60%)
+  - Tightens hand ranges against maniacs (aggression factor >2.0)
+  - Adjusts bet sizing based on opponent tendencies
 - **Bluffing**: Strategic bluffing on scary boards (e.g., 4-to-a-straight on river), folds to re-raises
 - **Thinking Time**: 1500ms-3500ms (varies by decision complexity)
 
@@ -662,6 +668,331 @@ module.exports = {
 1. **RED**: Write failing test
 2. **GREEN**: Write minimum code to pass
 3. **REFACTOR**: Clean up while keeping tests green
+
+---
+
+### 0.7 Preflop Equity Table Design
+
+**Decision**: Use precomputed equity table for 169 starting hands
+
+**Rationale**:
+- Preflop hand evaluation is deterministic (only 169 unique starting hands)
+- O(1) lookup much faster than real-time simulation
+- Simplifies bot AI preflop decision-making
+- Accurate equity values from poker solver tools
+
+**Implementation**:
+```typescript
+// src/utils/preflopEquity.ts
+// Equity values are vs random hands (heads-up scenario)
+export const PREFLOP_EQUITY: Record<string, number> = {
+  // Premium pairs
+  'AA': 0.85, 'KK': 0.82, 'QQ': 0.80, 'JJ': 0.77, 'TT': 0.75,
+  '99': 0.72, '88': 0.69, '77': 0.66, '66': 0.63, '55': 0.60,
+  '44': 0.57, '33': 0.54, '22': 0.50,
+
+  // Suited broadway
+  'AKs': 0.67, 'AQs': 0.66, 'AJs': 0.65, 'ATs': 0.64,
+  'KQs': 0.63, 'KJs': 0.62, 'KTs': 0.61,
+  'QJs': 0.60, 'QTs': 0.59, 'JTs': 0.58,
+
+  // Offsuit broadway
+  'AKo': 0.65, 'AQo': 0.64, 'AJo': 0.63, 'ATo': 0.62,
+  'KQo': 0.61, 'KJo': 0.60, 'KTo': 0.59,
+  'QJo': 0.58, 'QTo': 0.57, 'JTo': 0.56,
+
+  // Suited connectors
+  'T9s': 0.56, '98s': 0.55, '87s': 0.54, '76s': 0.53,
+  '65s': 0.52, '54s': 0.51,
+
+  // Weak hands
+  '72o': 0.35, '73o': 0.36, '82o': 0.37, '83o': 0.38,
+  // ... (remaining 169 hands)
+};
+
+// Helper to get equity for any 2-card combination
+export function getPreflopEquity(card1: Card, card2: Card): number {
+  const notation = toHandNotation(card1, card2); // e.g., "AKs", "72o"
+  return PREFLOP_EQUITY[notation] || 0.50; // Default 50% if not found
+}
+
+function toHandNotation(card1: Card, card2: Card): string {
+  const ranks = [card1.rank, card2.rank].sort(rankComparator);
+  const suited = card1.suit === card2.suit ? 's' : 'o';
+  return `${ranks[0]}${ranks[1]}${suited}`;
+}
+```
+
+**Data Source**: Chen formula or poker simulation tools (PokerStove, Equilab)
+
+---
+
+### 0.8 Post-flop Equity Calculator
+
+**Decision**: Monte Carlo simulation with Web Worker
+
+**Rationale**:
+- Post-flop equity is dynamic (depends on community cards)
+- Monte Carlo simulation: Deal random opponent hands 1000 times, evaluate winners
+- Web Worker prevents UI blocking (calculation takes 50-100ms)
+- Sufficient accuracy with 1000 iterations (±2% error margin)
+
+**Implementation**:
+```typescript
+// src/workers/equityCalculator.worker.ts
+import { Hand } from 'pokersolver';
+
+interface EquityCalculationRequest {
+  holeCards: Card[];
+  communityCards: Card[];
+  iterations: number;
+}
+
+self.onmessage = (e: MessageEvent<EquityCalculationRequest>) => {
+  const { holeCards, communityCards, iterations } = e.data;
+
+  let wins = 0;
+  let ties = 0;
+
+  // Run Monte Carlo simulation
+  for (let i = 0; i < iterations; i++) {
+    // Create deck without known cards
+    const deck = createDeckExcluding([...holeCards, ...communityCards]);
+
+    // Deal random opponent hand (2 cards)
+    const oppHand = dealRandomCards(deck, 2);
+
+    // Deal remaining community cards if needed
+    const remainingBoard = communityCards.length < 5
+      ? [...communityCards, ...dealRandomCards(deck, 5 - communityCards.length)]
+      : communityCards;
+
+    // Evaluate both hands
+    const myHand = Hand.solve([...holeCards, ...remainingBoard]);
+    const oppHandResult = Hand.solve([...oppHand, ...remainingBoard]);
+
+    const winners = Hand.winners([myHand, oppHandResult]);
+
+    if (winners.length === 2) ties++;
+    else if (winners[0] === myHand) wins++;
+  }
+
+  const equity = (wins + ties / 2) / iterations;
+
+  // Send result back to main thread
+  self.postMessage({ equity });
+};
+```
+
+**Usage in Component**:
+```typescript
+// src/presentation/components/game/HandStrengthIndicator.tsx
+const calculateEquity = async (holeCards: Card[], communityCards: Card[]): Promise<number> => {
+  return new Promise((resolve) => {
+    const worker = new Worker(new URL('@/workers/equityCalculator.worker.ts', import.meta.url));
+
+    worker.postMessage({ holeCards, communityCards, iterations: 1000 });
+
+    worker.onmessage = (e) => {
+      resolve(e.data.equity);
+      worker.terminate();
+    };
+  });
+};
+```
+
+**Performance**: 50-100ms for 1000 iterations (non-blocking via Web Worker)
+
+---
+
+### 0.9 Game State Auto-Save Architecture
+
+**Decision**: Auto-save to localStorage after each hand completion
+
+**Rationale**:
+- Prevents data loss on accidental browser close
+- Improves UX (resume game seamlessly)
+- localStorage is synchronous and fast (<5ms writes)
+- 24-hour expiration prevents stale saves
+
+**Implementation**:
+```typescript
+// src/state-management/gameStore.ts
+import { create } from 'zustand';
+
+interface SavedGameState {
+  players: Player[];
+  dealerIndex: number;
+  handNumber: number;
+  timestamp: number;
+  settings: GameSettings;
+}
+
+export const useGameStore = create<GameState>((set, get) => ({
+  // ... existing state
+
+  completeHand: () => set(state => {
+    const newState = {
+      ...state,
+      // Award pots, rotate dealer, etc.
+    };
+
+    // Auto-save after hand completes
+    saveGameState(newState);
+
+    return newState;
+  }),
+
+  loadSavedGame: () => {
+    const saved = loadSavedGameState();
+    if (saved) {
+      set(state => ({
+        ...state,
+        players: saved.players,
+        dealerIndex: saved.dealerIndex,
+        handNumber: saved.handNumber,
+        settings: saved.settings,
+        phase: 'playing'
+      }));
+    }
+  },
+
+  clearSavedGame: () => {
+    localStorage.removeItem('poker-game-state');
+  }
+}));
+
+// Helper functions
+function saveGameState(state: GameState): void {
+  try {
+    const saveData: SavedGameState = {
+      players: state.players,
+      dealerIndex: state.dealerIndex,
+      handNumber: state.handNumber || 0,
+      timestamp: Date.now(),
+      settings: state.settings
+    };
+
+    localStorage.setItem('poker-game-state', JSON.stringify(saveData));
+  } catch (error) {
+    console.error('Failed to save game state:', error);
+    // Quota exceeded or other error - fail silently
+  }
+}
+
+function loadSavedGameState(): SavedGameState | null {
+  try {
+    const saved = localStorage.getItem('poker-game-state');
+    if (!saved) return null;
+
+    const state: SavedGameState = JSON.parse(saved);
+
+    // Invalidate saves older than 24 hours
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    if (Date.now() - state.timestamp > TWENTY_FOUR_HOURS) {
+      localStorage.removeItem('poker-game-state');
+      return null;
+    }
+
+    return state;
+  } catch (error) {
+    console.error('Failed to load game state:', error);
+    return null;
+  }
+}
+```
+
+**UI Flow**:
+```typescript
+// src/presentation/pages/HomePage.tsx
+const HomePage: React.FC = () => {
+  const { loadSavedGame } = useGameStore();
+  const savedGame = loadSavedGameState();
+
+  return (
+    <div>
+      <h1>Texas Hold'em Poker</h1>
+      {savedGame ? (
+        <>
+          <button onClick={loadSavedGame}>Resume Game</button>
+          <button onClick={startNewGame}>New Game</button>
+        </>
+      ) : (
+        <button onClick={startNewGame}>Quick Play</button>
+      )}
+    </div>
+  );
+};
+```
+
+---
+
+### 0.10 Responsive Design Strategy
+
+**Decision**: Mobile-first CSS with Tailwind breakpoints
+
+**Rationale**:
+- Tailwind provides clean breakpoint system
+- Mobile-first = progressive enhancement
+- Flexbox/Grid for fluid layouts
+- CSS custom properties for dynamic sizing
+
+**Breakpoints**:
+```javascript
+// tailwind.config.js
+module.exports = {
+  theme: {
+    screens: {
+      'mobile': '390px',     // Large phones landscape (iPhone 14 Pro)
+      'tablet': '768px',     // Tablets (iPad Mini landscape)
+      'laptop': '1366px',    // Laptops (MacBook Air)
+      'desktop': '1920px'    // Desktops (Full HD)
+    }
+  }
+}
+```
+
+**Responsive Layout Strategy**:
+
+**Mobile Landscape (390px - 767px)**:
+- Vertical player arrangement (3 on left, 3 on right)
+- Smaller cards (40x56px)
+- Compact action buttons (icon-only)
+- Simplified UI (no action log, minimal animations)
+
+**Tablet (768px - 1365px)**:
+- Elliptical table with 6 seats
+- Medium cards (60x84px)
+- Standard action buttons with text
+- All features enabled
+
+**Desktop (≥1366px)**:
+- Full table with 6-9 seats
+- Large cards (80x112px)
+- Full feature set
+- Rich animations
+
+**Implementation Example**:
+```typescript
+// src/presentation/components/cards/PlayingCard.tsx
+const PlayingCard: React.FC<{ card: Card }> = ({ card }) => {
+  return (
+    <div className="
+      w-10 h-14          /* mobile: 40x56px */
+      tablet:w-15 tablet:h-21  /* tablet: 60x84px */
+      laptop:w-20 laptop:h-28  /* desktop: 80x112px */
+      transition-all duration-300
+    ">
+      {/* Card content */}
+    </div>
+  );
+};
+```
+
+**Performance Considerations**:
+- Use `@media (prefers-reduced-motion)` for animation opt-out
+- Lazy load heavy components on mobile
+- Reduce animation complexity on lower-end devices
 
 ---
 
@@ -1235,13 +1566,19 @@ module.exports = {
 |-------|----------|-------|-------------|
 | Phase 0 | N/A | 8h | Research & technology decisions |
 | Phase 1 | Week 1 | 10h | Foundation & setup (project init, build config) |
-| Phase 2 | Week 2-3 | 45h | Game logic core (poker rules, hand eval, pots) |
-| Phase 3 | Week 4 | 28h | Bot AI (Easy/Medium/Hard strategies) |
-| Phase 4 | Week 5 | 33h | UI components (table, cards, buttons, animations) |
-| Phase 5 | Week 6 | 28h | Integration & polish (connect UI to logic) |
+| Phase 2 | Week 2-3 | 52h | Game logic core (poker rules, hand eval, pots, equity calculator) |
+| Phase 3 | Week 4 | 30h | Bot AI (Easy/Medium/Hard strategies, opponent stat tracking) |
+| Phase 4 | Week 5 | 39h | UI components (table, cards, buttons, animations, responsive design) |
+| Phase 5 | Week 6 | 31.5h | Integration & polish (connect UI to logic, auto-save, multi-device) |
 | Phase 6 | Week 7 | 23h | Testing & refinement (playtesting, bug fixes) |
 | Phase 7 | Week 8 | 13h | Deployment & launch (production build, CI/CD) |
-| **Total** | **8 weeks** | **188h** | **Complete standalone poker game** |
+| **Total** | **8-9 weeks** | **206.5h** | **Complete standalone poker game** |
+
+**Updated Estimates Include**:
+- **+7h Phase 2**: Preflop equity table (2h), post-flop Monte Carlo calculator (3h), Web Worker setup (1h), hand strength UI (1h)
+- **+2h Phase 3**: Enhanced opponent stat tracking for Medium/Hard bots
+- **+6h Phase 4**: Responsive design breakpoints (3h), iPad testing (2h), iPhone landscape testing (1h)
+- **+3.5h Phase 5**: Auto-save to localStorage (2h), resume game UI (1h), save invalidation (0.5h)
 
 **Assumptions**:
 - Solo developer working 20-30 hours/week

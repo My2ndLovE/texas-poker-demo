@@ -159,11 +159,13 @@ As a player, I want to see my current statistics and hand strength indicators so
 
 1. **Given** I am playing, **When** I view my player panel, **Then** I see current session stats: Hands Played, Hands Won, Current Win Rate %, Total Chips Won/Lost, Biggest Pot Won
 
-2. **Given** I receive hole cards, **When** I view my cards, **Then** I see subtle hand strength indicator (e.g., "Strong" for pocket aces, "Weak" for 7-2 offsuit, "Playable" for suited connectors), helps beginners understand starting hand quality
+2. **Given** I receive hole cards preflop, **When** I view my cards, **Then** I see hand strength indicator displaying: percentage equity vs random hands (e.g., "85%" for pocket aces, "35%" for 7-2 offsuit), qualitative label (e.g., "Very Strong", "Weak", "Playable"), and description (e.g., "Top 5% starting hand")
 
-3. **Given** I'm in a hand, **When** I hover/tap on my cards, **Then** I see possible hand outcomes (e.g., "Pair of 8s - currently losing to visible pair of Kings"), educational tooltip without explicit odds
+3. **Given** community cards are dealt, **When** I view my hand strength indicator, **Then** it updates to show current equity percentage (e.g., "72% to win" with top pair), qualitative label adjusts based on board texture, and optional tooltip explains calculation methodology (Monte Carlo simulation vs 1000 random opponent hands)
 
-4. **Given** I complete a session, **When** I end game, **Then** I see summary screen with: Total Hands Played, Win Rate, Biggest Win/Loss, Hands Won by Hand Type (pie chart), "Play Again" and "Change Settings" buttons
+4. **Given** I hover/tap on hand strength indicator, **When** tooltip appears, **Then** I see detailed explanation: equity calculation method, number of outs (if drawing), and recommended action hint based on pot odds
+
+5. **Given** I complete a session, **When** I end game, **Then** I see summary screen with: Total Hands Played, Win Rate, Biggest Win/Loss, Hands Won by Hand Type (pie chart), "Play Again" and "Change Settings" buttons
 
 ---
 
@@ -417,8 +419,14 @@ As a player, I want to review my recently played hands so I can analyze my decis
 - **FR-100**: System MUST provide ARIA labels for screen readers on all interactive elements
 - **FR-101**: System MUST announce game state changes to screen readers ("Your turn", "Flop dealt", "You won 250 chips")
 - **FR-102**: System MUST support color blind mode with patterned card suits
-- **FR-103**: System MUST remain playable on laptop screens (minimum 1366x768 resolution)
-- **FR-104**: System MUST scale interface responsively when window resized
+- **FR-103**: System MUST remain playable on multiple device types:
+  - Desktop: 1920x1080 to 1366x768
+  - Tablet landscape: 1024x768 (iPad, Android tablets)
+  - Large phone landscape: 844x390 (iPhone 14 Pro and similar)
+- **FR-104**: System MUST scale interface responsively with breakpoints:
+  - Desktop (≥1366px): Full table with 6-9 seats visible
+  - Tablet (768px-1365px): Condensed table with 6 seats, smaller cards
+  - Large phone landscape (≥390px): Minimal UI, 3-6 seats visible, simplified layout
 - **FR-105**: System MUST show tooltips on hover explaining game elements
 
 **Error Handling & Edge Cases**
@@ -433,6 +441,38 @@ As a player, I want to review my recently played hands so I can analyze my decis
 - **FR-113**: System MUST skip eliminated players when rotating dealer button
 - **FR-114**: System MUST log errors to browser console for debugging
 - **FR-115**: System MUST display user-friendly error messages (no technical jargon)
+
+**Game State Persistence**
+
+- **FR-116**: System MUST auto-save game state to localStorage after each hand completes
+- **FR-117**: System MUST restore saved game state on app launch if save exists and is less than 24 hours old
+- **FR-118**: System MUST show "Resume Game" button on main menu if saved game detected
+- **FR-119**: System MUST clear saved game when player explicitly ends game, gets eliminated, or save exceeds 24 hours
+
+**Advanced Bot AI**
+
+- **FR-120**: Medium and Hard bots MUST track opponent statistics per player:
+  - VPIP (Voluntarily Put money In Pot percentage)
+  - Fold to bet frequency
+  - Call frequency
+  - Raise frequency
+  - Aggression factor (raises / calls ratio)
+- **FR-121**: Hard bots MUST adapt strategy based on opponent statistics:
+  - Bluff more frequently against opponents with high fold-to-bet rate (>70%)
+  - Value bet more frequently against calling stations (call frequency >60%)
+  - Tighten hand ranges against aggressive opponents (aggression factor >2.0)
+  - Track patterns over minimum 10 hands before adapting strategy
+
+**Hand Strength Indicator**
+
+- **FR-122**: System MUST display hand strength indicator for player's hole cards:
+  - Percentage equity (0-100%) vs random opponent hands
+  - Qualitative label ("Very Strong", "Strong", "Playable", "Marginal", "Weak")
+  - Preflop: Use preflop equity table (169 starting hands)
+  - Post-flop: Calculate equity using Monte Carlo simulation (1000 iterations)
+- **FR-123**: System MUST update hand strength indicator as community cards are dealt
+- **FR-124**: System MUST provide optional tooltip explaining equity calculation (toggle in settings)
+- **FR-125**: System MUST run post-flop equity calculations in Web Worker to avoid blocking UI
 
 ---
 
@@ -464,21 +504,24 @@ As a player, I want to review my recently played hands so I can analyze my decis
 
 - Players have basic understanding of Texas Hold'em rules (game provides visual hints but not comprehensive tutorial)
 - Players use modern browsers (Chrome 90+, Firefox 90+, Safari 14+, Edge 90+)
-- Players have desktop or laptop computers (1366x768 minimum resolution)
+- Players have desktop, laptop, tablet, or large phone devices:
+  - Desktop/laptop: 1920x1080 to 1366x768
+  - Tablets in landscape: 1024x768 (iPad, Android tablets)
+  - Large phones in landscape: 844x390 minimum (iPhone 14 Pro and similar)
 - Players have JavaScript enabled (game is pure client-side JavaScript/TypeScript)
-- Players accept that game state is not saved across browser sessions by default (can opt-in to save settings)
+- Players accept auto-save to localStorage (game state saved after each hand, restored on launch, cleared after 24 hours)
 - Players are comfortable with English language for MVP (localization for other languages post-MVP)
-- Players have mouse or trackpad for interactions (touchscreen support post-MVP)
+- Players have mouse, trackpad, or touchscreen for interactions (touch-optimized for tablets)
 
 ### Constraints
 
 - **No Backend**: All game logic runs client-side in browser (no server, no database, no API calls)
 - **No Multiplayer**: Single-player only, no online/local multiplayer (network code out of scope)
-- **No Persistence**: Game state lost on browser close unless manually saved to localStorage (no cloud saves)
+- **LocalStorage Only**: Game state auto-saved to browser localStorage (no cloud saves, limited to single device/browser)
 - **Single Game Mode**: Cash game only, no tournaments, no sit-and-go (simplified scope for MVP)
 - **Fixed Table Size**: 6-9 players maximum (2-9 player support, but optimal experience at 6)
 - **No Real Money**: Play money only, no integration with payment systems or cryptocurrency
-- **Desktop Focus**: Optimized for desktop/laptop, mobile support post-MVP
+- **Multi-Device Support**: Optimized for desktop/laptop/tablet landscape, portrait mode and small phones post-MVP
 - **English Only**: UI text in English, localization infrastructure ready but translations post-MVP
 - **Modern Browsers**: Requires ES2020+ features, no Internet Explorer support
 

@@ -8,9 +8,15 @@
 
 ## Summary
 
-**Total Tasks**: 187 tasks across 7 phases
-**Timeline**: 6-8 weeks (solo developer, 20-30 hours/week)
-**Total Estimated Hours**: 188 hours
+**Total Tasks**: 201 tasks across 7 phases (14 new tasks added)
+**Timeline**: 8-9 weeks (solo developer, 20-30 hours/week)
+**Total Estimated Hours**: 206.5 hours
+
+**New Features Added**:
+- Preflop equity table and post-flop Monte Carlo calculator
+- Opponent stat tracking for Medium/Hard bots
+- Multi-device responsive design (desktop/tablet/mobile landscape)
+- Game state auto-save to localStorage
 
 ---
 
@@ -19,10 +25,10 @@
 | Phase | Tasks | Hours | Description |
 |-------|-------|-------|-------------|
 | Phase 1 | 22 tasks | 10h | Foundation & Setup |
-| Phase 2 | 62 tasks | 45h | Game Logic Core |
-| Phase 3 | 32 tasks | 28h | Bot AI Implementation |
-| Phase 4 | 35 tasks | 33h | UI Components |
-| Phase 5 | 18 tasks | 28h | Integration & Polish |
+| Phase 2 | 66 tasks | 52h | Game Logic Core (+ equity calculator) |
+| Phase 3 | 32 tasks | 30h | Bot AI Implementation (+ opponent tracking) |
+| Phase 4 | 38 tasks | 39h | UI Components (+ responsive design) |
+| Phase 5 | 21 tasks | 31.5h | Integration & Polish (+ auto-save) |
 | Phase 6 | 12 tasks | 23h | Testing & Refinement |
 | Phase 7 | 6 tasks | 13h | Deployment & Launch |
 
@@ -382,6 +388,47 @@ Every task marked with [TDD] MUST follow this cycle:
     - Examples: "Royal Flush", "Full House, Kings over Tens"
   - Add tests
   - **Acceptance**: Human-readable hand descriptions
+
+- [ ] **T037.5** [TDD] [2h] Create preflop equity table
+  - **RED**: Write test `tests/unit/utils/preflopEquity.test.ts`
+    - Test equity lookup for premium hands (AA = 85%, KK = 82%)
+    - Test equity lookup for weak hands (72o = 35%)
+    - Test hand notation conversion (cards to "AKs", "72o" format)
+  - **GREEN**: Create `src/utils/preflopEquity.ts`
+    - Define PREFLOP_EQUITY table with all 169 starting hands
+    - Implement getPreflopEquity(card1, card2) function
+    - Implement toHandNotation(card1, card2) helper
+  - **REFACTOR**: Organize equity values by hand category
+  - **Acceptance**: Preflop equity table complete with 100% coverage
+
+- [ ] **T037.6** [TDD] [3h] Implement post-flop equity calculator (Monte Carlo)
+  - **RED**: Write test `tests/unit/workers/equityCalculator.test.ts`
+    - Test Monte Carlo simulation with known scenarios (flush vs pair)
+    - Test accuracy within ±2% after 1000 iterations
+    - Test different board states (flop, turn, river)
+  - **GREEN**: Create `src/workers/equityCalculator.worker.ts`
+    - Implement Monte Carlo simulation (1000 iterations)
+    - Deal random opponent hands from remaining deck
+    - Evaluate winners using pokersolver
+    - Calculate equity as (wins + ties/2) / iterations
+  - **REFACTOR**: Optimize deck creation, add comments
+  - **Acceptance**: Equity calculator accurate within ±2%
+
+- [ ] **T037.7** [1h] Set up Web Worker for non-blocking equity calculation
+  - Create Web Worker wrapper in UI components
+  - Implement worker message passing (request/response)
+  - Add worker termination after calculation
+  - Test that UI remains responsive during calculation
+  - **Acceptance**: Equity calculation non-blocking (<100ms UI responsiveness)
+
+- [ ] **T037.8** [1h] Create hand strength indicator component
+  - Create `src/presentation/components/game/HandStrengthIndicator.tsx`
+  - Display equity percentage (0-100%)
+  - Display qualitative label ("Very Strong", "Strong", "Playable", "Marginal", "Weak")
+  - Display description (e.g., "Top 5% starting hand")
+  - Add optional tooltip with calculation details
+  - Test `tests/components/HandStrengthIndicator.test.tsx`
+  - **Acceptance**: Hand strength indicator displays correctly
 
 - [ ] **T038** [1h] Refactor and verify hand evaluation module
   - Review all tests (ensure 100% coverage)
@@ -955,15 +1002,20 @@ Every task marked with [TDD] MUST follow this cycle:
   - **REFACTOR**: Use random chance with position modifier
   - **Acceptance**: Bluffing logic works
 
-- [ ] **T099** [TDD] [1h] Implement basic opponent modeling
+- [ ] **T099** [TDD] [2h] Implement opponent stat tracking
   - **RED**: Write test `tests/unit/bot-ai/OpponentModeler.test.ts`
-    - Test tracking opponent actions (fold, call, raise frequencies)
-    - Test adjusting strategy (bluff more against tight players)
+    - Test tracking VPIP (Voluntarily Put money In Pot %)
+    - Test tracking fold-to-bet frequency
+    - Test tracking call/raise frequencies
+    - Test calculating aggression factor (raises / calls ratio)
+    - Test requiring minimum 10 hands before using stats
   - **GREEN**: Implement `src/bot-ai/analysis/OpponentModeler.ts`
-    - `trackAction(playerId: string, action: Action): void`
-    - `getPlayerTendency(playerId: string): Tendency`
-  - **REFACTOR**: Use simple counters
-  - **Acceptance**: Basic opponent modeling works
+    - `interface OpponentStats { playerId, handsObserved, vpip, foldToBetFreq, callFreq, raiseFreq, aggressionFactor }`
+    - `trackAction(playerId: string, action: Action, context: ActionContext): void`
+    - `getPlayerProfile(playerId: string): 'tight-passive' | 'tight-aggressive' | 'loose-passive' | 'loose-aggressive'`
+    - Require minimum 10 hands observed before classifying
+  - **REFACTOR**: Add stat calculation helpers
+  - **Acceptance**: Opponent stat tracking works, accurate stats after 10+ hands
 
 - [ ] **T100** [TDD] [1h] Test Medium bot win rate
   - **RED**: Write test `tests/unit/bot-ai/MediumBotWinRate.test.ts`
@@ -1013,13 +1065,19 @@ Every task marked with [TDD] MUST follow this cycle:
   - **REFACTOR**: Randomize with strategy bias
   - **Acceptance**: Bet sizing tells work
 
-- [ ] **T106** [TDD] [1h] Implement adaptive play
+- [ ] **T106** [TDD] [2h] Implement adaptive play based on opponent stats
   - **RED**: Write tests in `HardStrategy.test.ts`
-    - Test exploiting tight players (bluff more)
-    - Test exploiting loose players (value bet more)
-  - **GREEN**: Integrate OpponentModeler
-  - **REFACTOR**: Adjust strategy per opponent
-  - **Acceptance**: Adaptive play works
+    - Test bluffing more against high fold-to-bet opponents (>70%)
+    - Test value betting more against calling stations (call freq >60%)
+    - Test tightening ranges against maniacs (aggression factor >2.0)
+    - Test adjusting bet sizing based on opponent profile
+    - Test only adapting after 10+ hands observed
+  - **GREEN**: Integrate OpponentModeler into Hard bot decision-making
+    - Modify bluff frequency based on opponent fold-to-bet rate
+    - Modify value bet sizing based on opponent call frequency
+    - Modify hand range selection based on opponent aggression
+  - **REFACTOR**: Create adaptation strategy helpers
+  - **Acceptance**: Hard bot adapts strategy based on opponent stats, measurable exploitation
 
 - [ ] **T107** [TDD] [0.5h] Test Hard bot win rate
   - **RED**: Write test `tests/unit/bot-ai/HardBotWinRate.test.ts`
@@ -1511,6 +1569,36 @@ Every task marked with [TDD] MUST follow this cycle:
   - Avoid layout thrashing (batch DOM updates)
   - **Acceptance**: Animations smooth on target hardware
 
+- [ ] **T153.5** [3h] Implement responsive breakpoints for multi-device support
+  - Update `tailwind.config.js` with custom breakpoints:
+    - 'mobile': '390px' (large phones landscape)
+    - 'tablet': '768px' (tablets)
+    - 'laptop': '1366px' (laptops)
+    - 'desktop': '1920px' (desktops)
+  - Create responsive card sizes (40x56px mobile, 60x84px tablet, 80x112px desktop)
+  - Implement mobile layout (vertical player arrangement, compact UI)
+  - Implement tablet layout (condensed table, medium cards)
+  - Implement desktop layout (full table, large cards)
+  - Test responsive scaling with browser DevTools
+  - **Acceptance**: UI adapts to all screen sizes (390px to 1920px)
+
+- [ ] **T153.6** [2h] Test and refine layout on iPad
+  - Test on iPad (1024x768 landscape)
+  - Verify table scales correctly
+  - Verify action buttons accessible
+  - Verify cards readable
+  - Fix any layout issues specific to tablet
+  - Test touch interactions (tap vs click)
+  - **Acceptance**: Game fully playable on iPad landscape
+
+- [ ] **T153.7** [1h] Test on iPhone landscape mode
+  - Test on iPhone 14 Pro (844x390 landscape)
+  - Verify minimal UI displays correctly
+  - Verify simplified player arrangement works
+  - Verify action buttons accessible with fingers
+  - Fix any layout issues specific to mobile
+  - **Acceptance**: Game playable on large phones in landscape
+
 **Phase 4 Acceptance Criteria**:
 - [x] All UI components render correctly
 - [x] Animations smooth at 60fps
@@ -1558,6 +1646,32 @@ Every task marked with [TDD] MUST follow this cycle:
   - Update after each hand
   - Optionally persist to localStorage
   - **Acceptance**: Stats store tracks metrics
+
+- [ ] **T161.5** [2h] Implement auto-save to localStorage after hand completion
+  - Add auto-save logic to `gameStore.completeHand()`
+  - Create `saveGameState(state: GameState): void` helper function
+  - Save to localStorage with key 'poker-game-state'
+  - Include: players, dealerIndex, handNumber, timestamp, settings
+  - Add error handling for quota exceeded
+  - Test save occurs after each hand
+  - **Acceptance**: Game state auto-saves after every hand
+
+- [ ] **T161.6** [1h] Implement resume game detection and UI
+  - Create `loadSavedGameState(): SavedGameState | null` helper
+  - Check for saved game on app launch
+  - Invalidate saves older than 24 hours
+  - Update HomePage to show "Resume Game" button if save exists
+  - Implement loadSavedGame() action in gameStore
+  - Test resume functionality restores game state correctly
+  - **Acceptance**: Resume game works, "Resume Game" button appears when applicable
+
+- [ ] **T161.7** [0.5h] Add save state invalidation and cleanup
+  - Clear save when player explicitly ends game
+  - Clear save when player is eliminated
+  - Clear save when starting new game (show confirmation if save exists)
+  - Implement clearSavedGame() action in gameStore
+  - Test save cleared in all scenarios
+  - **Acceptance**: Save cleared appropriately, no stale saves
 
 ### Game Loop Integration (T162-T168) [10h]
 
@@ -1994,7 +2108,7 @@ Use TodoWrite tool to track task completion:
 
 ---
 
-**Tasks Version**: 1.0
+**Tasks Version**: 1.1 (Updated with new features)
 **Last Updated**: 2025-11-18
 **Status**: Ready for execution
-**Total Estimated Hours**: 188 hours
+**Total Estimated Hours**: 206.5 hours (18.5 hours added for new features)
